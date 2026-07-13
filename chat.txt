@@ -1,0 +1,253 @@
+Okay amigo 👍 Dann ist der Key auf dem Server vorhanden, aber GitHub kennt diesen öffentlichen Schlüssel noch nicht (oder er ist nicht dem richtigen GitHub-Konto zugeordnet).
+Wir prüfen das jetzt sauber.
+1. Zeige deinen öffentlichen Key an
+Auf dem Server:
+cat ~/.ssh/id_ed25519.pub
+Die Ausgabe muss mit sowas anfangen:
+ssh-ed25519 AAAA...
+Diese komplette Zeile kopieren.
+2. Key bei GitHub eintragen
+Gehe zu:
+GitHub → dein Profilbild → Settings → SSH and GPG keys → New SSH key
+Eintragen:
+Title:
+dark-vpn FortKnox
+Key type:
+Authentication Key
+Key: Den kompletten Inhalt von id_ed25519.pub
+Speichern.
+3. Danach erneut testen
+Auf dem Server:
+ssh -i ~/.ssh/id_ed25519 -T git@github.com
+Erwartete Ausgabe:
+Hi XAcidBrainX! You've successfully authenticated, but GitHub does not provide shell access.
+Falls es danach immer noch nicht geht, prüfen wir, ob der öffentliche und private Key zusammenpassen:
+ssh-keygen -y -f ~/.ssh/id_ed25519
+Die Ausgabe muss mit deinem Inhalt aus id_ed25519.pub übereinstimmen.
+Kleine Anmerkung: Du hast mehrere alte Keys (id_rsa, acid, .ppk usw.) auf dem Server. Das ist nicht schlimm, aber für FortKnox würde ich später einen eigenen Projekt-Key anlegen, z. B.:
+~/.ssh/fortknox_ed25519
+Dann bleibt der Server sauber getrennt. 👍
+Mach jetzt bitte erst den GitHub-Key-Eintrag und teste nochmal. 🚀
+
+😄 Los geht’s, amigo! 🚀
+Dann machen wir jetzt den ersten echten Entwicklungsschritt.
+Wir nennen den ersten Meilenstein:
+FortKnox PreDB Suite v0.2.0
+"Sentinel Core"
+Ziel: Ein stabiler Grundkern, auf dem später alles andere aufbauen kann.
+Schritt 1: Grundstruktur im Repository
+In deinem Repo sollte jetzt diese Struktur entstehen:
+FortKnox-PreDB/
+│
+├── README.md
+├── CHANGELOG.md
+├── .gitignore
+│
+├── bot/
+│   ├── bin/
+│   │   └── predbot.php
+│   │
+│   ├── src/
+│   │   ├── Core/
+│   │   ├── IRC/
+│   │   ├── Database/
+│   │   ├── Commands/
+│   │   ├── Security/
+│   │   └── Services/
+│   │
+│   ├── config/
+│   │   └── config.example.php
+│   │
+│   └── logs/
+│
+├── api/
+│
+├── panel/
+│
+├── presite/
+│
+├── database/
+│
+└── scripts/
+Schritt 2: Erste technische Entscheidung
+Wir nehmen:
+Sprache
+✅ PHP 8.2+
+Warum?
+dein vorhandener Bot ist PHP
+Debian 12 passt perfekt
+MariaDB-Anbindung ist einfach
+Webpanel kann später dieselbe Sprache nutzen
+Schritt 3: Der Kern bekommt klare Aufgaben
+Der Bot besteht aus Modulen:
+Core
+Verwaltet:
+Start
+Stop
+Events
+Konfiguration
+IRC
+Verwaltet:
+SSL Verbindung Port 6697
+PING/PONG
+Join
+NickServ
+Nachrichten
+Database
+Verwaltet:
+MariaDB Verbindung
+Queries
+Reconnect
+Services
+Verwaltet:
+Release Scanner
+Announcer
+Notifications
+Schritt 4: Die erste Datei
+Als erstes bauen wir den Einstiegspunkt:
+bot/bin/predbot.php
+Der macht später nur:
+Start
+ |
+Config laden
+ |
+Logger starten
+ |
+Datenbank verbinden
+ |
+IRC verbinden
+ |
+Bot starten
+Noch keine 1000 Funktionen.
+Erst das Fundament.
+Dein nächster Schritt
+Mach bitte im Repository:
+cd FortKnox-PreDB
+
+mkdir -p bot/bin
+mkdir -p bot/src/{Core,IRC,Database,Commands,Security,Services}
+mkdir -p bot/config
+mkdir -p database
+mkdir -p scripts
+mkdir -p api panel presite
+Dann:
+git add .
+git commit -m "Create FortKnox Sentinel Core structure"
+git push
+Wenn das erledigt ist, gehen wir an den ersten echten Code: Config-System + Logger + erster Bot-Start.
+Ab jetzt wird aus der Idee langsam echte Software. 😎🚀
+
+Alles gut, amigo 😎👍 Das ist ein typischer erster Git-Schritt. Die Meldung bedeutet nur:
+In /root/FortKnox-PreDB wurde noch kein Git-Repository initialisiert.
+Wir müssen Git dort erst aktivieren und mit deinem GitHub-Repository verbinden.
+Mach bitte genau diese Schritte:
+1. Prüfen, ob du im richtigen Ordner bist
+pwd
+Es sollte sein:
+/root/FortKnox-PreDB
+Dann:
+ls -la
+Dort müsste später ein Ordner .git auftauchen.
+2. Git initialisieren
+git init
+Danach sollte kommen:
+Initialized empty Git repository in /root/FortKnox-PreDB/.git/
+3. GitHub als Ziel hinzufügen
+Dafür brauche ich die genaue Repo-URL.
+Sie sieht ungefähr so aus:
+https://github.com/XAcidBrainX/FortKnox-PreDB.git
+Dann:
+git remote add origin https://github.com/XAcidBrainX/FortKnox-PreDB.git
+Prüfen:
+git remote -v
+4. Dateien hinzufügen
+git add .
+Commit erstellen:
+git commit -m "Create FortKnox Sentinel Core structure"
+5. Hochladen
+git branch -M main
+git push -u origin main
+Falls beim git push eine Anmeldung kommt: GitHub benutzt keine normalen Passwörter mehr. Dann brauchst du einen Personal Access Token (PAT) oder SSH-Key.
+Wir machen das sauber.
+Schick mir bitte einmal die Ausgabe von:
+ls -la
+und
+git remote -v
+Dann sehen wir genau, wo du gerade stehst. 🚀
+
+Perfekt, danke für den Link 👍
+Die Repo-Adresse ist also:
+https://github.com/XAcidBrainX/FortKnox-PreDB.git
+(Die direkte Suche konnte die private/neu erstellte Repo nicht anzeigen, das ist aber kein Problem.) �
+GitHub
+Jetzt machen wir deinen Server sauber mit Git bekannt.
+Du bist gerade hier:
+root@dark-vpn:~/FortKnox-PreDB#
+Führe jetzt diese Befehle aus:
+1. Git initialisieren
+git init
+2. GitHub verbinden
+git remote add origin https://github.com/XAcidBrainX/FortKnox-PreDB.git
+Kontrolle:
+git remote -v
+Es sollte erscheinen:
+origin  https://github.com/XAcidBrainX/FortKnox-PreDB.git (fetch)
+origin  https://github.com/XAcidBrainX/FortKnox-PreDB.git (push)
+3. Dateien hinzufügen
+git add .
+4. Ersten Commit erstellen
+git commit -m "Initial FortKnox PreDB Suite foundation"
+5. Auf GitHub hochladen
+git branch -M main
+git push -u origin main
+Falls jetzt eine Fehlermeldung kommt wegen Anmeldung, keine Panik. GitHub akzeptiert kein normales Passwort mehr. Dann richten wir entweder ein:
+🔑 SSH-Key (meine Empfehlung für deinen Server)
+oder GitHub Personal Access Token
+Ich würde bei deinem Projekt SSH-Key nehmen, weil dein Debian-Server später sowieso regelmäßig Updates ziehen und pushen soll.
+Mach jetzt erstmal:
+git init
+und schick mir die Ausgabe. Dann gehen wir den nächsten Schritt gemeinsam. 🚀
+
+Alles gut, amigo 😎👍
+Die Meldung ist sogar logisch. Git sagt dir:
+"Ich habe keinen Commit und keinen Inhalt, den ich hochladen kann."
+Du hast zwar das Repository initialisiert, aber der Ordner ist aktuell leer (oder enthält keine Dateien, die Git verfolgen kann).
+Wir machen jetzt den ersten echten Inhalt.
+1. Prüfe den Inhalt
+Bitte einmal:
+ls -la
+Ich vermute, du siehst nur:
+.
+..
+.git
+2. Erstelle die Grundstruktur
+Führe aus:
+mkdir -p bot/{bin,src/{Core,IRC,Database,Commands,Security,Services},config}
+mkdir -p api panel presite database scripts docs
+3. Erstelle die ersten Dateien
+touch README.md
+touch CHANGELOG.md
+touch .gitignore
+4. Prüfen
+find . -maxdepth 2 -type f
+Jetzt sollten Dateien angezeigt werden.
+5. Git hinzufügen
+git add .
+Kontrolle:
+git status
+Da sollte jetzt etwas stehen wie:
+new file: README.md
+new file: CHANGELOG.md
+new file: .gitignore
+6. Erster Commit
+git commit -m "Initial FortKnox PreDB Suite foundation"
+7. Push
+Da du den Branch schon umbenannt hast:
+git push -u origin main
+Danach sollte dein GitHub-Repository nicht mehr leer sein. 🎉
+Der erste Meilenstein wäre dann geschafft:
+✅ Git eingerichtet
+✅ Repository verbunden
+✅ Grundstruktur hochgeladen
+Dann kommt der nächste schöne Schritt: der erste echte Code – FortKnox Sentinel Core startet. 🚀
+Schick mir am besten die Ausgabe von git status, bevor du pushst, dann kontrollieren wir gemeinsam.

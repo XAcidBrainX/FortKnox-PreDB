@@ -1,0 +1,41 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\Database\Connection;
+use FortKnox\Database\MigrationRunner;
+
+$envFile = dirname(__DIR__) . '/.env';
+
+if (!is_readable($envFile)) {
+    fwrite(STDERR, "Missing .env file.\n");
+    exit(1);
+}
+
+$env = parse_ini_file($envFile);
+
+if ($env === false) {
+    fwrite(STDERR, "Unable to read .env file.\n");
+    exit(1);
+}
+
+$connection = new Connection([
+    'host' => $env['DB_HOST'] ?? '127.0.0.1',
+    'port' => (int) ($env['DB_PORT'] ?? 3306),
+    'database' => $env['DB_DATABASE'] ?? '',
+    'username' => $env['DB_USERNAME'] ?? '',
+    'password' => $env['DB_PASSWORD'] ?? '',
+    'charset' => $env['DB_CHARSET'] ?? 'utf8mb4',
+]);
+
+$runner = new MigrationRunner(
+    $connection->get(),
+    dirname(__DIR__) . '/database/migrations'
+);
+
+$runner->run();
+
+echo "Migration process completed.\n";

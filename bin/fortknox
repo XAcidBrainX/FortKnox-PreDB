@@ -1,0 +1,13 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\Core\Application;
+
+$app = new Application();
+
+echo $app->name() . PHP_EOL;
+echo 'Version: ' . $app->version() . PHP_EOL;

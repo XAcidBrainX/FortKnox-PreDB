@@ -1,0 +1,30 @@
+{
+    "name": "xac1dbrainx/fortknox-predb",
+    "description": "FortKnox PreDB Suite - IRC, PreDB and WebPanel",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "ext-json": "*",
+        "ext-mysqli": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-openssl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "FortKnox\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FortKnox\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "check": "php -l src",
+        "test": "php -l src"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

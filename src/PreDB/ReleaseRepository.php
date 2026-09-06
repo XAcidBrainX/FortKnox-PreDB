@@ -21,11 +21,15 @@ final class ReleaseRepository
             'SELECT
                 id,
                 name,
+                title,
                 category,
+                year,
                 group_id,
                 season,
                 episode,
                 resolution,
+                language,
+                codec,
                 size_bytes,
                 source,
                 nuke,
@@ -113,21 +117,29 @@ final class ReleaseRepository
         $stmt = $this->pdo->prepare(
             'INSERT INTO releases (
                 name,
+                title,
                 category,
+                year,
                 group_id,
                 season,
                 episode,
                 resolution,
+                language,
+                codec,
                 size_bytes,
                 source,
                 nuke
              ) VALUES (
                 :name,
+                :title,
                 :category,
+                :year,
                 :group_id,
                 :season,
                 :episode,
                 :resolution,
+                :language,
+                :codec,
                 :size_bytes,
                 :source,
                 0
@@ -136,11 +148,15 @@ final class ReleaseRepository
 
         $stmt->execute([
             'name' => $release->releaseName(),
+            'title' => $release->title(),
             'category' => $release->category(),
+            'year' => $release->year(),
             'group_id' => $groupId,
             'season' => $release->season(),
             'episode' => $release->episode(),
             'resolution' => $release->resolution(),
+            'language' => $release->language(),
+            'codec' => $release->codec(),
             'size_bytes' => null,
             'source' => $release->source(),
         ]);

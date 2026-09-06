@@ -19,9 +19,13 @@ $parser = new ReleaseParser();
 $release = $parser->parse($releaseName);
 
 echo "Release:    " . $release->releaseName() . PHP_EOL;
+echo "Title:      " . ($release->title() ?? '-') . PHP_EOL;
 echo "Group:      " . ($release->group() ?? '-') . PHP_EOL;
 echo "Category:   " . ($release->category() ?? '-') . PHP_EOL;
+echo "Year:       " . ($release->year() ?? '-') . PHP_EOL;
 echo "Season:     " . ($release->season() ?? '-') . PHP_EOL;
 echo "Episode:    " . ($release->episode() ?? '-') . PHP_EOL;
 echo "Resolution: " . ($release->resolution() ?? '-') . PHP_EOL;
 echo "Source:     " . ($release->source() ?? '-') . PHP_EOL;
+echo "Language:   " . ($release->language() ?? '-') . PHP_EOL;
+echo "Codec:      " . ($release->codec() ?? '-') . PHP_EOL;

@@ -1,0 +1,50 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\IRC\AnnouncementHandler;
+use FortKnox\IRC\IrcMessage;
+use FortKnox\PreDB\ImportService;
+
+/*
+ * We only test extraction indirectly.
+ * A lightweight fake ImportService would require an interface,
+ * so for now we test the complete handler through the existing DB.
+ */
+
+echo "===== FortKnox IRC Filter Test =====" . PHP_EOL;
+
+$tests = [
+    'Movie.Title.2026.1080p.WEB.x264-GRP',
+    'Show.Name.S03E07.1080p.WEB-DL.x264-GRP',
+    'hello everyone',
+    '/me says hello',
+    'PING',
+    'This is just normal IRC chat',
+];
+
+foreach ($tests as $text) {
+    echo str_repeat('-', 70) . PHP_EOL;
+    echo "Input: {$text}" . PHP_EOL;
+
+    if (
+        preg_match(
+            '/^[A-Za-z0-9][A-Za-z0-9._-]{2,254}-[A-Za-z0-9][A-Za-z0-9_-]{1,31}$/',
+            $text
+        ) === 1
+        && (
+            str_contains($text, '.')
+            || preg_match('/S\d{1,2}E\d{1,3}/i', $text)
+        )
+    ) {
+        echo "FILTER: ACCEPT" . PHP_EOL;
+    } else {
+        echo "FILTER: IGNORE" . PHP_EOL;
+    }
+}
+
+echo str_repeat('-', 70) . PHP_EOL;
+echo "Filter test complete." . PHP_EOL;

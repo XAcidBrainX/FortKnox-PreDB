@@ -1,0 +1,94 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\Database\Connection;
+use FortKnox\IRC\AnnouncementHandler;
+use FortKnox\IRC\IrcMessage;
+use FortKnox\PreDB\ImportService;
+use FortKnox\PreDB\ReleaseParser;
+use FortKnox\PreDB\ReleaseRepository;
+
+$envFile = dirname(__DIR__) . '/.env';
+
+if (!is_readable($envFile)) {
+    fwrite(STDERR, "Missing .env file.\n");
+    exit(1);
+}
+
+$env = parse_ini_file($envFile);
+
+if ($env === false) {
+    fwrite(STDERR, "Unable to read .env file.\n");
+    exit(1);
+}
+
+$connection = new Connection([
+    'host' => $env['DB_HOST'] ?? '127.0.0.1',
+    'port' => (int) ($env['DB_PORT'] ?? 3306),
+    'database' => $env['DB_DATABASE'] ?? '',
+    'username' => $env['DB_USERNAME'] ?? '',
+    'password' => $env['DB_PASSWORD'] ?? '',
+    'charset' => $env['DB_CHARSET'] ?? 'utf8mb4',
+]);
+
+try {
+    $pdo = $connection->get();
+
+    $parser = new ReleaseParser();
+    $repository = new ReleaseRepository($pdo);
+
+    $importService = new ImportService(
+        $pdo,
+        $parser,
+        $repository
+    );
+
+    $handler = new AnnouncementHandler(
+        $importService
+    );
+
+    $message = new IrcMessage(
+        sender: 'TestBot',
+        channel: '#predb',
+        text: 'IRC.Movie.2026.GERMAN.1080p.WEB.x264-IRCTEST'
+    );
+
+    echo "===== FortKnox IRC Test =====" . PHP_EOL;
+    echo "Sender:  " . $message->sender() . PHP_EOL;
+    echo "Channel: " . $message->channel() . PHP_EOL;
+    echo "Message: " . $message->text() . PHP_EOL;
+    echo PHP_EOL;
+
+    $result = $handler->handle($message);
+
+    if ($result === null) {
+        echo "RESULT: IGNORED" . PHP_EOL;
+        exit(0);
+    }
+
+    echo "RESULT: " .
+        ($result->imported() ? 'IMPORTED' : 'DUPLICATE') .
+        PHP_EOL;
+
+    echo "Release ID: " .
+        $result->releaseId() .
+        PHP_EOL;
+
+    echo "Event: " .
+        $result->eventType() .
+        PHP_EOL;
+
+} catch (\Throwable $exception) {
+    fwrite(
+        STDERR,
+        "IRC TEST FAILED: " .
+        $exception->getMessage() .
+        PHP_EOL
+    );
+
+    exit(1);
+}

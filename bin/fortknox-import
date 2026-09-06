@@ -1,0 +1,96 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\Database\Connection;
+use FortKnox\PreDB\ImportService;
+use FortKnox\PreDB\ReleaseParser;
+use FortKnox\PreDB\ReleaseRepository;
+
+if ($argc < 2) {
+    fwrite(
+        STDERR,
+        "Usage: ./bin/fortknox-import \"Release.Name\"\n"
+    );
+    exit(1);
+}
+
+$releaseName = trim($argv[1]);
+
+if ($releaseName === '') {
+    fwrite(STDERR, "Release name must not be empty.\n");
+    exit(1);
+}
+
+$envFile = dirname(__DIR__) . '/.env';
+
+if (!is_readable($envFile)) {
+    fwrite(STDERR, "Missing .env file.\n");
+    exit(1);
+}
+
+$env = parse_ini_file($envFile);
+
+if ($env === false) {
+    fwrite(STDERR, "Unable to read .env file.\n");
+    exit(1);
+}
+
+$connection = new Connection([
+    'host' => $env['DB_HOST'] ?? '127.0.0.1',
+    'port' => (int) ($env['DB_PORT'] ?? 3306),
+    'database' => $env['DB_DATABASE'] ?? '',
+    'username' => $env['DB_USERNAME'] ?? '',
+    'password' => $env['DB_PASSWORD'] ?? '',
+    'charset' => $env['DB_CHARSET'] ?? 'utf8mb4',
+]);
+
+try {
+    $pdo = $connection->get();
+
+    $parser = new ReleaseParser();
+    $repository = new ReleaseRepository($pdo);
+
+    $service = new ImportService(
+        $pdo,
+        $parser,
+        $repository
+    );
+
+    $result = $service->import($releaseName);
+    $release = $result->release();
+
+    echo "===== FortKnox PreDB Import =====" . PHP_EOL;
+    echo "Release:    " . $release->releaseName() . PHP_EOL;
+    echo "Group:      " . ($release->group() ?? '-') . PHP_EOL;
+    echo "Category:   " . ($release->category() ?? '-') . PHP_EOL;
+    echo "Season:     " . ($release->season() ?? '-') . PHP_EOL;
+    echo "Episode:    " . ($release->episode() ?? '-') . PHP_EOL;
+    echo "Resolution: " . ($release->resolution() ?? '-') . PHP_EOL;
+    echo "Source:     " . ($release->source() ?? '-') . PHP_EOL;
+    echo PHP_EOL;
+
+    if ($result->imported()) {
+        echo "RESULT:     IMPORTED" . PHP_EOL;
+        echo "Release ID: " . $result->releaseId() . PHP_EOL;
+        echo "Group ID:   " . ($result->groupId() ?? '-') . PHP_EOL;
+        echo "Event:      " . $result->eventType() . PHP_EOL;
+    } else {
+        echo "RESULT:     DUPLICATE" . PHP_EOL;
+        echo "Release ID: " . $result->releaseId() . PHP_EOL;
+        echo "Event:      " . $result->eventType() . PHP_EOL;
+    }
+
+} catch (\Throwable $exception) {
+    fwrite(
+        STDERR,
+        PHP_EOL .
+        "RESULT: FAILED" . PHP_EOL .
+        "Error: " . $exception->getMessage() . PHP_EOL
+    );
+
+    exit(1);
+}

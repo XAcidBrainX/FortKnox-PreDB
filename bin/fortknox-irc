@@ -1,0 +1,131 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\Database\Connection;
+use FortKnox\IRC\AnnouncementHandler;
+use FortKnox\IRC\IrcClient;
+use FortKnox\IRC\IrcProtocolParser;
+use FortKnox\IRC\IrcSession;
+use FortKnox\PreDB\ImportService;
+use FortKnox\PreDB\ReleaseParser;
+use FortKnox\PreDB\ReleaseRepository;
+
+$envFile = dirname(__DIR__) . '/.env';
+
+if (!is_readable($envFile)) {
+    fwrite(STDERR, "Missing .env file.\n");
+    exit(1);
+}
+
+$env = parse_ini_file($envFile);
+
+if ($env === false) {
+    fwrite(STDERR, "Unable to read .env file.\n");
+    exit(1);
+}
+
+$required = [
+    'IRC_HOST',
+    'IRC_PORT',
+    'IRC_NICK',
+    'IRC_USERNAME',
+    'IRC_REALNAME',
+    'IRC_CHANNELS',
+];
+
+foreach ($required as $key) {
+    if (!isset($env[$key]) || trim((string) $env[$key]) === '') {
+        fwrite(
+            STDERR,
+            "Missing IRC configuration: {$key}\n"
+        );
+
+        exit(1);
+    }
+}
+
+/*
+ * Database
+ */
+$connection = new Connection([
+    'host' => $env['DB_HOST'] ?? '127.0.0.1',
+    'port' => (int) ($env['DB_PORT'] ?? 3306),
+    'database' => $env['DB_DATABASE'] ?? '',
+    'username' => $env['DB_USERNAME'] ?? '',
+    'password' => $env['DB_PASSWORD'] ?? '',
+    'charset' => $env['DB_CHARSET'] ?? 'utf8mb4',
+]);
+
+try {
+    $pdo = $connection->get();
+
+    /*
+     * PreDB pipeline
+     */
+    $parser = new ReleaseParser();
+
+    $repository = new ReleaseRepository(
+        $pdo
+    );
+
+    $importService = new ImportService(
+        $pdo,
+        $parser,
+        $repository
+    );
+
+    $announcementHandler = new AnnouncementHandler(
+        $importService
+    );
+
+    /*
+     * IRC
+     */
+    $client = new IrcClient(
+        host: (string) $env['IRC_HOST'],
+        port: (int) $env['IRC_PORT'],
+        tls: filter_var(
+            $env['IRC_TLS'] ?? true,
+            FILTER_VALIDATE_BOOLEAN
+        )
+    );
+
+    $ircParser = new IrcProtocolParser();
+
+    $channels = array_filter(
+        array_map(
+            'trim',
+            explode(',', (string) $env['IRC_CHANNELS'])
+        )
+    );
+
+    $session = new IrcSession(
+        client: $client,
+        parser: $ircParser,
+        announcementHandler: $announcementHandler,
+        nickname: (string) $env['IRC_NICK'],
+        username: (string) $env['IRC_USERNAME'],
+        realname: (string) $env['IRC_REALNAME'],
+        channels: $channels,
+        password: !empty($env['IRC_PASSWORD'])
+            ? (string) $env['IRC_PASSWORD']
+            : null,
+    );
+
+    $session->run();
+
+} catch (\Throwable $exception) {
+    fwrite(
+        STDERR,
+        PHP_EOL .
+        'FortKnox IRC FAILED: ' .
+        $exception->getMessage() .
+        PHP_EOL
+    );
+
+    exit(1);
+}

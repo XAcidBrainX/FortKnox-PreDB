@@ -1,0 +1,27 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\PreDB\ReleaseParser;
+
+if ($argc < 2) {
+    fwrite(STDERR, "Usage: fortknox-parse <release-name>\n");
+    exit(1);
+}
+
+$releaseName = $argv[1];
+
+$parser = new ReleaseParser();
+
+$release = $parser->parse($releaseName);
+
+echo "Release:    " . $release->releaseName() . PHP_EOL;
+echo "Group:      " . ($release->group() ?? '-') . PHP_EOL;
+echo "Category:   " . ($release->category() ?? '-') . PHP_EOL;
+echo "Season:     " . ($release->season() ?? '-') . PHP_EOL;
+echo "Episode:    " . ($release->episode() ?? '-') . PHP_EOL;
+echo "Resolution: " . ($release->resolution() ?? '-') . PHP_EOL;
+echo "Source:     " . ($release->source() ?? '-') . PHP_EOL;

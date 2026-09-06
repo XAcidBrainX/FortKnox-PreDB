@@ -1,0 +1,26 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\IRC\IrcProtocolParser;
+
+$line =
+    ':ReleaseBot!predb@example.net PRIVMSG #predb :' .
+    'Show.Name.S03E07.1080p.WEB-DL.x264-GRP';
+
+$parser = new IrcProtocolParser();
+
+$message = $parser->parse($line);
+
+if ($message === null) {
+    fwrite(STDERR, "PARSER FAILED\n");
+    exit(1);
+}
+
+echo "===== IRC Protocol Test =====" . PHP_EOL;
+echo "Sender:  " . $message->sender() . PHP_EOL;
+echo "Channel: " . $message->channel() . PHP_EOL;
+echo "Text:    " . $message->text() . PHP_EOL;

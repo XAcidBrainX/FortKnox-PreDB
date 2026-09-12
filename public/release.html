@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FortKnox PreDB – Release</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0f1115;
+            color: #e8e8e8;
+        }
+
+        header {
+            background: #171a21;
+            border-bottom: 1px solid #2a2f38;
+            padding: 18px 30px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        header span {
+            color: #888;
+            font-size: 13px;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #6ea8fe;
+            text-decoration: none;
+        }
+
+        .back:hover {
+            text-decoration: underline;
+        }
+
+        .card {
+            background: #171a21;
+            border: 1px solid #2a2f38;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .release-name {
+            font-size: 22px;
+            font-weight: bold;
+            word-break: break-word;
+            margin-bottom: 8px;
+        }
+
+        .release-title {
+            color: #999;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .field {
+            background: #101217;
+            border: 1px solid #252a32;
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .field-label {
+            color: #777;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .field-value {
+            font-size: 15px;
+            word-break: break-word;
+        }
+
+        .nuke {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .clean {
+            color: #69db7c;
+            font-weight: bold;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        .event {
+            border-left: 3px solid #444;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background: #101217;
+            border-radius: 0 7px 7px 0;
+        }
+
+        .event-announce {
+            border-left-color: #69db7c;
+        }
+
+        .event-dupe {
+            border-left-color: #ffd43b;
+        }
+
+        .event-nuke {
+            border-left-color: #ff6b6b;
+        }
+
+        .event-unnuke {
+            border-left-color: #69db7c;
+        }
+
+        .event-update {
+            border-left-color: #74c0fc;
+        }
+
+        .event-type {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .event-message {
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+
+        .event-meta {
+            color: #666;
+            font-size: 12px;
+        }
+.actions {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0 24px;
+    flex-wrap: wrap;
+}
+
+.button {
+    border: 0;
+    border-radius: 7px;
+    padding: 11px 18px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.button-nuke {
+    background: #c92a2a;
+    color: #fff;
+}
+
+.button-nuke:hover {
+    background: #e03131;
+}
+
+.button-unnuke {
+    background: #2b8a3e;
+    color: #fff;
+}
+
+.button-unnuke:hover {
+    background: #37b24d;
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+        .error {
+            background: #351b1b;
+            border: 1px solid #702525;
+            color: #ff8787;
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        .loading {
+            color: #888;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>FortKnox PreDB</h1>
+    <span>Release Details</span>
+</header>
+
+<main>
+
+    <a class="back" href="/dashboard.html">
+        ← Zurück zum Dashboard
+    </a>
+
+    <div id="content">
+        <div class="loading">
+            Lade Release...
+        </div>
+    </div>
+
+</main>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const releaseId = params.get('id');
+
+    const content = document.getElementById('content');
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '—';
+        }
+
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function field(label, value) {
+        return `
+            <div class="field">
+                <div class="field-label">${escapeHtml(label)}</div>
+                <div class="field-value">${escapeHtml(value)}</div>
+            </div>
+        `;
+    }
+
+    function renderRelease(data) {
+        const release = data.release;
+        const events = data.events || [];
+
+        const nukeStatus = Number(release.nuke) === 1
+            ? '<span class="nuke">NUKED</span>'
+            : '<span class="clean">CLEAN</span>';
+        const isNuked = Number(release.nuke) === 1;
+            
+
+        let eventsHtml = '';
+
+        if (events.length === 0) {
+            eventsHtml = `
+                <div class="loading">
+                    Keine Events vorhanden.
+                </div>
+            `;
+        } else {
+            eventsHtml = events.map(event => {
+                const type = String(event.event_type || '').toLowerCase();
+
+                return `
+                    <div class="event event-${escapeHtml(type)}">
+                        <div class="event-type">
+                            ${escapeHtml(event.event_type)}
+                        </div>
+
+                        <div class="event-message">
+                            ${escapeHtml(event.message)}
+                        </div>
+
+                        <div class="event-meta">
+                            Quelle: ${escapeHtml(event.source)}
+                            &nbsp;|&nbsp;
+                            ${escapeHtml(event.created_at)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        content.innerHTML = `
+            <div class="card">
+
+                <div class="release-name">
+                    ${escapeHtml(release.name)}
+                </div>
+
+                <div class="release-title">
+                    ${escapeHtml(release.title)}
+                </div>
+
+<div class="actions">
+    ${
+        isNuked
+            ? `
+                <button
+                    id="unnukeButton"
+                    class="button button-unnuke"
+                    onclick="changeNukeStatus('unnuke')">
+                    UNNUKE
+                </button>
+            `
+            : `
+                <button
+                    id="nukeButton"
+                    class="button button-nuke"
+                    onclick="changeNukeStatus('nuke')">
+                    NUKE
+                </button>
+            `
+    }
+</div>
+
+                <div class="grid">
+                    ${field('ID', release.id)}
+                    ${field('Kategorie', release.category)}
+                    ${field('Jahr', release.year)}
+                    ${field('Gruppe', release.group_name)}
+                    ${field('Auflösung', release.resolution)}
+                    ${field('Codec', release.codec)}
+                    ${field('Sprache', release.language)}
+                    ${field('Source', release.source)}
+                    ${field('Season', release.season)}
+                    ${field('Episode', release.episode)}
+                    ${field('Größe', release.size_bytes)}
+                    ${field('Erstellt', release.created_at)}
+                    ${field('Aktualisiert', release.updated_at)}
+                    <div class="field">
+    <div class="field-label">Status</div>
+    <div class="field-value">${nukeStatus}</div>
+</div>
+                </div>
+
+            </div>
+
+            <div class="card">
+                <h2>Event-History</h2>
+
+                ${eventsHtml}
+            </div>
+        `;
+    }
+async function changeNukeStatus(action) {
+
+    const button = document.getElementById(
+        action === 'nuke'
+            ? 'nukeButton'
+            : 'unnukeButton'
+    );
+
+    if (button) {
+        button.disabled = true;
+    }
+
+    try {
+        const response = await fetch(
+            '/api/releases/' +
+            encodeURIComponent(releaseId) +
+            '/' +
+            action,
+            {
+                method: 'POST'
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.error || 'Aktion fehlgeschlagen.'
+            );
+        }
+
+        await loadRelease();
+
+    } catch (error) {
+
+        alert(error.message);
+
+        if (button) {
+            button.disabled = false;
+        }
+    }
+}
+    async function loadRelease() {
+
+        if (!releaseId) {
+            content.innerHTML = `
+                <div class="error">
+                    Keine Release-ID angegeben.
+                </div>
+            `;
+
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                '/api/releases/' + encodeURIComponent(releaseId)
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.error || 'Release konnte nicht geladen werden.'
+                );
+            }
+
+            renderRelease(data);
+
+            document.title =
+                'FortKnox PreDB – ' +
+                data.release.name;
+
+        } catch (error) {
+
+            content.innerHTML = `
+                <div class="error">
+                    ${escapeHtml(error.message)}
+                </div>
+            `;
+        }
+    public function dupe(int $id): void
+{
+    try {
+        $pdo = $this->connection->get();
+
+        $statement = $pdo->prepare(
+            'SELECT id
+             FROM releases
+             WHERE id = :id
+             LIMIT 1'
+        );
+
+        $statement->execute([
+            'id' => $id,
+        ]);
+
+        $release = $statement->fetch();
+
+        if ($release === false) {
+            JsonResponse::send([
+                'success' => false,
+                'error' => 'Release not found.',
+            ], 404);
+
+            return;
+        }
+
+        $event = $pdo->prepare(
+            'INSERT INTO release_events
+                (release_id, event_type, message, source)
+             VALUES
+                (:release_id, :event_type, :message, :source)'
+        );
+
+        $event->execute([
+            'release_id' => $id,
+            'event_type' => 'dupe',
+            'message' => 'Release marked as dupe',
+            'source' => 'web',
+        ]);
+
+        JsonResponse::send([
+            'success' => true,
+            'message' => 'Release marked as dupe.',
+            'release_id' => $id,
+        ]);
+    } catch (PDOException $exception) {
+        JsonResponse::send([
+            'success' => false,
+            'error' => 'Unable to mark release as dupe.',
+        ], 500);
+    }
+}
+    }
+
+    loadRelease();
+</script>
+
+</body>
+</html>

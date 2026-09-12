@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FortKnox PreDB</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0f1117;
+            color: #e8eaed;
+        }
+
+        header {
+            background: #171a21;
+            border-bottom: 1px solid #292e38;
+            padding: 20px 30px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 26px;
+        }
+
+        header span {
+            color: #8b93a1;
+            font-size: 13px;
+        }
+
+        main {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .card,
+        .section {
+            background: #171a21;
+            border: 1px solid #292e38;
+            border-radius: 10px;
+        }
+
+        .card {
+            padding: 22px;
+        }
+
+        .card .label {
+            color: #8b93a1;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .card .value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid #292e38;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .section-body {
+            padding: 20px;
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: 2fr repeat(6, 1fr) auto;
+            gap: 10px;
+        }
+
+        input,
+        select,
+        button {
+            height: 42px;
+            border-radius: 6px;
+            border: 1px solid #353b47;
+            background: #20242d;
+            color: #e8eaed;
+            padding: 0 12px;
+            font-size: 14px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #6e7681;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            background: #303641;
+        }
+
+        button:hover {
+            background: #3a414d;
+        }
+
+        .search-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .category {
+            background: #20242d;
+            border: 1px solid #303641;
+            border-radius: 8px;
+            padding: 15px 20px;
+            min-width: 140px;
+        }
+
+        .category-name {
+            color: #8b93a1;
+            font-size: 12px;
+        }
+
+        .category-count {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .results-info {
+            color: #8b93a1;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #292e38;
+            font-size: 14px;
+        }
+
+        th {
+            color: #8b93a1;
+            font-weight: normal;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr.release-row {
+            cursor: pointer;
+        }
+
+        tr.release-row:hover {
+            background: #1e222a;
+        }
+
+        .release-name {
+            font-weight: bold;
+        }
+
+        .metadata {
+            color: #8b93a1;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 5px;
+            background: #252a33;
+            font-size: 12px;
+        }
+
+        .nuke {
+            color: #ff7b72;
+            font-weight: bold;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            min-width: 100px;
+        }
+
+        .page-info {
+            color: #8b93a1;
+        }
+
+        .status {
+            color: #7ee787;
+            font-size: 13px;
+        }
+
+        .error {
+            color: #ff7b72;
+            padding: 20px 0;
+        }
+
+        @media (max-width: 1100px) {
+            .search-form {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .search-form input {
+                grid-column: span 3;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            main {
+                padding: 15px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+
+            .search-form input {
+                grid-column: auto;
+            }
+
+            th:nth-child(1),
+            td:nth-child(1),
+            th:nth-child(5),
+            td:nth-child(5) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>🛡️ FortKnox PreDB</h1>
+    <span>PreDB Management &amp; Release Intelligence</span>
+</header>
+
+<main>
+
+    <!-- STATS -->
+
+    <div class="stats">
+
+        <div class="card">
+            <div class="label">Releases</div>
+            <div class="value" id="releases">-</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Groups</div>
+            <div class="value" id="groups">-</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Events</div>
+            <div class="value" id="events">-</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Nuked</div>
+            <div class="value" id="nuked">-</div>
+        </div>
+
+    </div>
+
+
+    <!-- SEARCH -->
+
+    <div class="section">
+
+        <div class="section-header">
+            🔎 Release Search
+        </div>
+
+        <div class="section-body">
+
+            <form
+                id="search-form"
+                class="search-form"
+            >
+
+                <input
+                    type="text"
+                    id="search"
+                    placeholder="Release, Titel, Group, Sprache ..."
+                >
+
+                <select id="category">
+                    <option value="">Kategorie</option>
+                    <option value="MOVIE">MOVIE</option>
+                    <option value="TV">TV</option>
+                    <option value="GAME">GAME</option>
+                    <option value="MUSIC">MUSIC</option>
+                    <option value="APP">APP</option>
+                    <option value="BOOK">BOOK</option>
+                </select>
+
+                <input
+                    type="number"
+                    id="year"
+                    placeholder="Jahr"
+                    min="1900"
+                    max="2100"
+                >
+
+                <input
+                    type="text"
+                    id="group"
+                    placeholder="Group"
+                >
+
+                <select id="resolution">
+                    <option value="">Auflösung</option>
+                    <option value="2160p">2160p</option>
+                    <option value="1080p">1080p</option>
+                    <option value="720p">720p</option>
+                    <option value="576p">576p</option>
+                    <option value="480p">480p</option>
+                </select>
+
+                <select id="language">
+                    <option value="">Sprache</option>
+                    <option value="GERMAN">GERMAN</option>
+                    <option value="ENGLISH">ENGLISH</option>
+                    <option value="FRENCH">FRENCH</option>
+                    <option value="SPANISH">SPANISH</option>
+                    <option value="ITALIAN">ITALIAN</option>
+                    <option value="DUTCH">DUTCH</option>
+                    <option value="MULTI">MULTI</option>
+                </select>
+
+                <select id="codec">
+                    <option value="">Codec</option>
+                    <option value="x265">x265</option>
+                    <option value="x264">x264</option>
+                    <option value="HEVC">HEVC</option>
+                    <option value="AV1">AV1</option>
+                    <option value="XviD">XviD</option>
+                </select>
+
+                <div class="search-actions">
+                    <button type="submit">
+                        Suchen
+                    </button>
+
+                    <button
+                        type="button"
+                        id="reset-search"
+                    >
+                        Reset
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- SEARCH RESULTS -->
+
+    <div class="section">
+
+        <div class="section-header">
+            📋 Releases
+        </div>
+
+        <div class="section-body">
+
+            <div
+                class="results-info"
+                id="results-info"
+            >
+                Wird geladen...
+            </div>
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Release</th>
+                        <th>Group</th>
+                        <th>Kategorie</th>
+                        <th>Jahr</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody id="releases-table">
+                </tbody>
+
+            </table>
+
+            <div class="pagination">
+
+                <button
+                    type="button"
+                    id="previous"
+                >
+                    ← Zurück
+                </button>
+
+                <span
+                    class="page-info"
+                    id="page-info"
+                >
+                    Seite 1
+                </span>
+
+                <button
+                    type="button"
+                    id="next"
+                >
+                    Weiter →
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- CATEGORIES -->
+
+    <div class="section">
+
+        <div class="section-header">
+            Kategorien
+        </div>
+
+        <div class="section-body">
+
+            <div
+                class="categories"
+                id="categories"
+            >
+                Wird geladen...
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="status">
+        ● FortKnox API verbunden
+    </div>
+
+</main>
+
+
+<script>
+
+let currentPage = 1;
+let totalPages = 1;
+
+
+function escapeHtml(value) {
+
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+
+async function loadDashboard() {
+
+    try {
+
+        const response =
+            await fetch('/api/dashboard');
+
+        if (!response.ok) {
+            throw new Error(
+                'HTTP ' + response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+            throw new Error(
+                data.error || 'Dashboard error'
+            );
+        }
+
+        document.getElementById('releases')
+            .textContent =
+            data.stats.releases;
+
+        document.getElementById('groups')
+            .textContent =
+            data.stats.groups;
+
+        document.getElementById('events')
+            .textContent =
+            data.stats.events;
+
+        document.getElementById('nuked')
+            .textContent =
+            data.stats.nuked;
+
+
+        const categories =
+            document.getElementById(
+                'categories'
+            );
+
+        categories.innerHTML = '';
+
+        for (const category of data.categories) {
+
+            const element =
+                document.createElement('div');
+
+            element.className = 'category';
+
+            element.innerHTML = `
+                <div class="category-name">
+                    ${escapeHtml(category.category)}
+                </div>
+
+                <div class="category-count">
+                    ${category.count}
+                </div>
+            `;
+
+            categories.appendChild(element);
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+}
+
+
+async function searchReleases() {
+
+    const params =
+        new URLSearchParams();
+
+    const q =
+        document.getElementById('search').value.trim();
+
+    const category =
+        document.getElementById('category').value;
+
+    const year =
+        document.getElementById('year').value;
+
+    const group =
+        document.getElementById('group').value.trim();
+
+    const resolution =
+        document.getElementById('resolution').value;
+
+    const language =
+        document.getElementById('language').value;
+
+    const codec =
+        document.getElementById('codec').value;
+
+
+    if (q) {
+        params.set('q', q);
+    }
+
+    if (category) {
+        params.set('category', category);
+    }
+
+    if (year) {
+        params.set('year', year);
+    }
+
+    if (group) {
+        params.set('group', group);
+    }
+
+    if (resolution) {
+        params.set('resolution', resolution);
+    }
+
+    if (language) {
+        params.set('language', language);
+    }
+
+    if (codec) {
+        params.set('codec', codec);
+    }
+
+
+    params.set('page', currentPage);
+    params.set('limit', '25');
+    params.set('sort', 'id');
+    params.set('order', 'DESC');
+
+
+    const url =
+        '/api/releases/search?' +
+        params.toString();
+
+
+    try {
+
+        const response =
+            await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(
+                'HTTP ' + response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+            throw new Error(
+                data.error || 'Search error'
+            );
+        }
+
+        renderResults(data);
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById(
+            'results-info'
+        ).textContent =
+            'Fehler bei der Suche.';
+
+        document.getElementById(
+            'releases-table'
+        ).innerHTML =
+            '<tr><td colspan="6" class="error">API nicht erreichbar.</td></tr>';
+
+    }
+}
+
+
+function renderResults(data) {
+
+    const table =
+        document.getElementById(
+            'releases-table'
+        );
+
+    table.innerHTML = '';
+
+
+    document.getElementById(
+        'results-info'
+    ).textContent =
+        `${data.total} Release(s) gefunden`;
+
+
+    totalPages =
+        data.pages || 1;
+
+
+    document.getElementById(
+        'page-info'
+    ).textContent =
+        `Seite ${data.page} / ${totalPages}`;
+
+
+    document.getElementById(
+        'previous'
+    ).disabled =
+        data.page <= 1;
+
+
+    document.getElementById(
+        'next'
+    ).disabled =
+        data.page >= totalPages;
+
+
+    if (!data.releases.length) {
+
+        table.innerHTML =
+            '<tr><td colspan="6">Keine Releases gefunden.</td></tr>';
+
+        return;
+    }
+
+
+    for (const release of data.releases) {
+
+        const row =
+            document.createElement('tr');
+
+        row.className =
+            'release-row';
+
+
+        row.addEventListener(
+            'click',
+            () => {
+                window.location.href =
+    '/release.html?id=' +
+    encodeURIComponent(release.id);
+            }
+        );
+
+
+        const metadata = [
+            release.resolution,
+            release.codec,
+            release.language,
+            release.source
+        ]
+        .filter(Boolean)
+        .join(' • ');
+
+
+        row.innerHTML = `
+
+            <td>
+                ${release.id}
+            </td>
+
+            <td>
+
+                <div class="release-name">
+                    ${escapeHtml(release.name)}
+                </div>
+
+                <div class="metadata">
+                    ${escapeHtml(metadata)}
+                </div>
+
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    release.group_name || '-'
+                )}
+            </td>
+
+            <td>
+                <span class="badge">
+                    ${escapeHtml(
+                        release.category || '-'
+                    )}
+                </span>
+            </td>
+
+            <td>
+                ${release.year || '-'}
+            </td>
+
+            <td>
+                ${
+                    Number(release.nuke) === 1
+                        ? '<span class="nuke">NUKED</span>'
+                        : 'OK'
+                }
+            </td>
+
+        `;
+
+
+        table.appendChild(row);
+    }
+}
+
+
+document.getElementById(
+    'search-form'
+).addEventListener(
+    'submit',
+    function(event) {
+
+        event.preventDefault();
+
+        currentPage = 1;
+
+        searchReleases();
+    }
+);
+
+
+document.getElementById(
+    'reset-search'
+).addEventListener(
+    'click',
+    function() {
+
+        document.getElementById(
+            'search-form'
+        ).reset();
+
+        currentPage = 1;
+
+        searchReleases();
+    }
+);
+
+
+document.getElementById(
+    'previous'
+).addEventListener(
+    'click',
+    function() {
+
+        if (currentPage > 1) {
+
+            currentPage--;
+
+            searchReleases();
+        }
+    }
+);
+
+
+document.getElementById(
+    'next'
+).addEventListener(
+    'click',
+    function() {
+
+        if (currentPage < totalPages) {
+
+            currentPage++;
+
+            searchReleases();
+        }
+    }
+);
+
+
+loadDashboard();
+searchReleases();
+
+</script>
+
+</body>
+</html>

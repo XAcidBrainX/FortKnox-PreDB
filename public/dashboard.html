@@ -272,7 +272,143 @@
                 display: none;
             }
         }
-    </style>
+
+
+        /* FortKnox 1.2 - Live Release Feed */
+
+        #live-feed-section {
+            margin-bottom: 24px;
+        }
+
+        #live-feed-status {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #7f8aa3;
+        }
+
+        #live-feed-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 58px;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 14px;
+            background: rgba(46, 204, 113, 0.12);
+            border: 1px solid rgba(46, 204, 113, 0.35);
+            color: #2ecc71;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        #live-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .live-release {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 14px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            cursor: pointer;
+            transition:
+                background 0.15s ease,
+                border-color 0.15s ease,
+                transform 0.15s ease;
+        }
+
+        .live-release:hover {
+            background: rgba(255, 255, 255, 0.055);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .live-release strong {
+            display: block;
+            color: #f1f3f6;
+            font-size: 14px;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .live-release .metadata {
+            margin-top: 5px;
+        }
+
+        .live-release-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 14px;
+            flex-shrink: 0;
+            color: #7f8aa3;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .live-release-meta span:first-child {
+            color: #aab4c8;
+            font-weight: 600;
+        }
+
+        .new-release-notification {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 9999;
+            padding: 13px 18px;
+            border-radius: 8px;
+            background: #1b2230;
+            border: 1px solid rgba(46, 204, 113, 0.45);
+            color: #f1f3f6;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition:
+                opacity 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .new-release-notification.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 700px) {
+
+            .live-release {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .live-release-meta {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                white-space: normal;
+            }
+
+            .new-release-notification {
+                right: 12px;
+                bottom: 12px;
+                left: 12px;
+                text-align: center;
+            }
+
+        }
+
+</style>
 </head>
 
 <body>
@@ -504,6 +640,10 @@
 let currentPage = 1;
 let totalPages = 1;
 
+let liveFeedInitialized = false;
+let lastKnownReleaseId = 0;
+let liveRefreshTimer = null;
+
 
 function escapeHtml(value) {
 
@@ -516,12 +656,271 @@ function escapeHtml(value) {
 }
 
 
+function ensureLiveFeed() {
+
+    if (document.getElementById('live-feed')) {
+        return;
+    }
+
+    const section = document.createElement('section');
+
+    section.id = 'live-feed-section';
+    section.className = 'section';
+
+    section.innerHTML = `
+        <div class="section-header">
+            <div>
+                <h2>Live Release Feed</h2>
+                <div id="live-feed-status">
+                    Initialisiere Live-Feed...
+                </div>
+            </div>
+
+            <div id="live-feed-indicator">
+                LIVE
+            </div>
+        </div>
+
+        <div id="live-feed"></div>
+    `;
+
+    const searchForm =
+        document.getElementById('search-form');
+
+    if (searchForm && searchForm.parentElement) {
+        searchForm.parentElement.parentElement.insertBefore(
+            section,
+            searchForm.parentElement
+        );
+    } else {
+        document.body.prepend(section);
+    }
+}
+
+
+function formatReleaseTime(value) {
+
+    if (!value) {
+        return '-';
+    }
+
+    const date = new Date(
+        value.replace(' ', 'T')
+    );
+
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleString(
+        'de-DE',
+        {
+            dateStyle: 'short',
+            timeStyle: 'medium'
+        }
+    );
+}
+
+
+function renderLiveFeed(releases) {
+
+    ensureLiveFeed();
+
+    const feed =
+        document.getElementById('live-feed');
+
+    const status =
+        document.getElementById('live-feed-status');
+
+    if (!releases || !releases.length) {
+
+        feed.innerHTML =
+            '<div class="metadata">Noch keine Releases vorhanden.</div>';
+
+        status.textContent =
+            'Keine Releases';
+
+        return;
+    }
+
+
+    const newestId =
+        Math.max(
+            ...releases.map(
+                release => Number(release.id) || 0
+            )
+        );
+
+
+    if (
+        liveFeedInitialized &&
+        newestId > lastKnownReleaseId
+    ) {
+
+        const count =
+            newestId - lastKnownReleaseId;
+
+        showNewReleaseNotification(
+            count > 0 ? count : 1
+        );
+    }
+
+
+    if (newestId > lastKnownReleaseId) {
+        lastKnownReleaseId = newestId;
+    }
+
+
+    liveFeedInitialized = true;
+
+
+    feed.innerHTML = releases
+        .slice(0, 10)
+        .map(release => {
+
+            const metadata = [
+                release.category,
+                release.resolution,
+                release.codec,
+                release.language,
+                release.source
+            ]
+            .filter(Boolean)
+            .join(' • ');
+
+            return `
+                <div class="live-release"
+                     data-release-id="${escapeHtml(release.id)}">
+
+                    <div>
+                        <strong>
+                            ${escapeHtml(release.name)}
+                        </strong>
+
+                        <div class="metadata">
+                            ${escapeHtml(metadata)}
+                        </div>
+                    </div>
+
+                    <div class="live-release-meta">
+                        <span>
+                            #${escapeHtml(release.id)}
+                        </span>
+
+                        <span>
+                            ${escapeHtml(
+                                release.group_name || '-'
+                            )}
+                        </span>
+
+                        <span>
+                            ${formatReleaseTime(
+                                release.created_at
+                            )}
+                        </span>
+                    </div>
+
+                </div>
+            `;
+
+        })
+        .join('');
+
+
+    document.querySelectorAll(
+        '.live-release'
+    ).forEach(element => {
+
+        element.addEventListener(
+            'click',
+            () => {
+
+                const id =
+                    element.dataset.releaseId;
+
+                window.location.href =
+                    '/release.html?id=' +
+                    encodeURIComponent(id);
+            }
+        );
+
+    });
+}
+
+
+function showNewReleaseNotification(count) {
+
+    let notification =
+        document.getElementById(
+            'new-release-notification'
+        );
+
+    if (!notification) {
+
+        notification =
+            document.createElement('div');
+
+        notification.id =
+            'new-release-notification';
+
+        notification.className =
+            'new-release-notification';
+
+        document.body.appendChild(
+            notification
+        );
+    }
+
+
+    notification.textContent =
+        count === 1
+            ? '1 neues Release verfügbar'
+            : count + ' neue Releases verfügbar';
+
+
+    notification.classList.add('visible');
+
+
+    window.setTimeout(
+        () => {
+            notification.classList.remove(
+                'visible'
+            );
+        },
+        5000
+    );
+}
+
+
+function updateLiveStatus() {
+
+    const status =
+        document.getElementById(
+            'live-feed-status'
+        );
+
+    if (!status) {
+        return;
+    }
+
+    status.textContent =
+        'Live • Letzte Aktualisierung: ' +
+        new Date().toLocaleTimeString('de-DE');
+
+}
+
+
 async function loadDashboard() {
 
     try {
 
         const response =
-            await fetch('/api/dashboard');
+            await fetch(
+                '/api/dashboard',
+                {
+                    cache: 'no-store'
+                }
+            );
 
         if (!response.ok) {
             throw new Error(
@@ -537,6 +936,7 @@ async function loadDashboard() {
                 data.error || 'Dashboard error'
             );
         }
+
 
         document.getElementById('releases')
             .textContent =
@@ -562,12 +962,14 @@ async function loadDashboard() {
 
         categories.innerHTML = '';
 
+
         for (const category of data.categories) {
 
             const element =
                 document.createElement('div');
 
-            element.className = 'category';
+            element.className =
+                'category';
 
             element.innerHTML = `
                 <div class="category-name">
@@ -582,9 +984,27 @@ async function loadDashboard() {
             categories.appendChild(element);
         }
 
+
+        renderLiveFeed(
+            data.recent_releases || []
+        );
+
+        updateLiveStatus();
+
+
     } catch (error) {
 
         console.error(error);
+
+        const status =
+            document.getElementById(
+                'live-feed-status'
+            );
+
+        if (status) {
+            status.textContent =
+                'Live-Feed nicht erreichbar';
+        }
 
     }
 }
@@ -660,7 +1080,12 @@ async function searchReleases() {
     try {
 
         const response =
-            await fetch(url);
+            await fetch(
+                url,
+                {
+                    cache: 'no-store'
+                }
+            );
 
         if (!response.ok) {
             throw new Error(
@@ -757,8 +1182,8 @@ function renderResults(data) {
             'click',
             () => {
                 window.location.href =
-    '/release.html?id=' +
-    encodeURIComponent(release.id);
+                    '/release.html?id=' +
+                    encodeURIComponent(release.id);
             }
         );
 
@@ -889,8 +1314,22 @@ document.getElementById(
 );
 
 
+ensureLiveFeed();
+
 loadDashboard();
 searchReleases();
+
+
+if (liveRefreshTimer) {
+    clearInterval(liveRefreshTimer);
+}
+
+
+liveRefreshTimer =
+    window.setInterval(
+        loadDashboard,
+        5000
+    );
 
 </script>
 

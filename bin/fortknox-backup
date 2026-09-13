@@ -1,0 +1,74 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$baseDir = dirname(__DIR__);
+$envFile = $baseDir . '/.env';
+
+if (!file_exists($envFile)) {
+    fwrite(STDERR, "[ERROR] .env file not found!\n");
+    exit(1);
+}
+
+$env = parse_ini_file($envFile) ?: [];
+
+$dbHost = $env['DB_HOST'] ?? '127.0.0.1';
+$dbPort = $env['DB_PORT'] ?? '3306';
+$dbName = $env['DB_DATABASE'] ?? 'fortknox';
+$dbUser = $env['DB_USERNAME'] ?? 'root';
+$dbPass = $env['DB_PASSWORD'] ?? '';
+
+$backupDir = $baseDir . '/storage/backups';
+if (!is_dir($backupDir)) {
+    mkdir($backupDir, 0750, true);
+}
+
+$date = date('Y-m-d_H-i-s');
+$dumpFile = "{$backupDir}/db_{$dbName}_{$date}.sql.gz";
+$envBackupFile = "{$backupDir}/env_{$date}.bak";
+
+echo "[BACKUP] Starting backup at " . date('Y-m-d H:i:s') . "\n";
+
+// 1. Sichern der aktuellen .env
+copy($envFile, $envBackupFile);
+chmod($envBackupFile, 0600);
+echo "[BACKUP] .env backed up to {$envBackupFile}\n";
+
+// 2. MariaDB Dump via mysqldump mit gzip Komprimierung
+$passArg = $dbPass !== '' ? "-p" . escapeshellarg($dbPass) : '';
+$cmd = sprintf(
+    'mysqldump --single-transaction --quick --host=%s --port=%s --user=%s %s %s | gzip -c > %s',
+    escapeshellarg($dbHost),
+    escapeshellarg((string)$dbPort),
+    escapeshellarg($dbUser),
+    $passArg,
+    escapeshellarg($dbName),
+    escapeshellarg($dumpFile)
+);
+
+exec($cmd, $output, $returnCode);
+
+if ($returnCode !== 0) {
+    fwrite(STDERR, "[ERROR] mysqldump failed with exit code {$returnCode}\n");
+    exit(1);
+}
+
+$sizeMb = round(filesize($dumpFile) / 1024 / 1024, 2);
+echo "[BACKUP] Database dumped successfully ({$sizeMb} MB) to {$dumpFile}\n";
+
+// 3. Rotation: Backups älter als 7 Tage löschen
+$retentionDays = 7;
+$files = glob("{$backupDir}/*");
+$now = time();
+
+foreach ($files as $file) {
+    if (is_file($file)) {
+        if ($now - filemtime($file) >= 60 * 60 * 24 * $retentionDays) {
+            unlink($file);
+            echo "[BACKUP] Purged old backup: " . basename($file) . "\n";
+        }
+    }
+}
+
+echo "[BACKUP] Completed successfully.\n";

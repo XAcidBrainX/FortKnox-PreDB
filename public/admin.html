@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>FortKnox PreDB - Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg: #0f141c;
+      --card: #18202c;
+      --border: #2b3648;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #38bdf8;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--bg); color: var(--text); padding: 24px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    h1, h2 { margin-bottom: 16px; font-size: 1.25rem; color: var(--primary); }
+    input, button { padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border); background: #0b0f15; color: var(--text); font-family: inherit; }
+    input:focus { outline: none; border-color: var(--primary); }
+    button { cursor: pointer; background: #1e293b; transition: background 0.15s; }
+    button:hover { background: #334155; }
+    button.danger { background: #7f1d1d; border-color: #991b1b; }
+    button.danger:hover { background: var(--danger); }
+    .flex { display: flex; gap: 8px; align-items: center; }
+    .hidden { display: none !important; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    th { color: var(--muted); }
+    .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+    .tag-nuke { background: #450a0a; color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Login View -->
+    <div id="loginView" class="card" style="max-width: 400px; margin: 60px auto;">
+      <h1>FortKnox Admin Login</h1>
+      <form id="loginForm">
+        <div style="margin-bottom: 12px;">
+          <input type="text" id="username" placeholder="Benutzername" style="width: 100%;" required>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <input type="password" id="password" placeholder="Passwort" style="width: 100%;" required>
+        </div>
+        <button type="submit" style="width: 100%; background: #0284c7;">Anmelden</button>
+        <div id="loginError" style="color: var(--danger); margin-top: 10px; font-size: 0.85rem;"></div>
+      </form>
+    </div>
+
+    <!-- Admin Panel View -->
+    <div id="adminView" class="hidden">
+      <div class="flex" style="justify-content: space-between; margin-bottom: 20px;">
+        <h1>FortKnox Control Center</h1>
+        <div class="flex">
+          <span id="userDisplay" style="color: var(--muted); font-size: 0.85rem;"></span>
+          <button id="logoutBtn">Abmelden</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Release Moderation</h2>
+        <div class="flex" style="margin-bottom: 12px;">
+          <input type="text" id="searchQuery" placeholder="Release suchen (z. B. Group, Name)..." style="flex: 1;">
+          <button id="searchBtn">Suchen</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Release Name</th>
+              <th>Sektion</th>
+              <th>Status</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="releaseTable">
+            <tr><td colspan="5" style="text-align: center; color: var(--muted);">Suchbegriff eingeben oder leere Suche für aktuelle Releases.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function checkAuth() {
+      const res = await fetch('/api/auth/status');
+      const data = await res.json();
+      if (data.authenticated) {
+        document.getElementById('loginView').classList.add('hidden');
+        document.getElementById('adminView').classList.remove('hidden');
+        document.getElementById('userDisplay').textContent = `Eingeloggt als: ${data.user}`;
+        loadReleases();
+      } else {
+        document.getElementById('loginView').classList.remove('hidden');
+        document.getElementById('adminView').classList.add('hidden');
+      }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('loginError');
+      err.textContent = '';
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value
+        })
+      });
+      if (res.ok) {
+        checkAuth();
+      } else {
+        const d = await res.json();
+        err.textContent = d.error || 'Login fehlgeschlagen.';
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      checkAuth();
+    });
+
+    async function loadReleases(query = '') {
+      const url = query ? `/api/releases/search?q=${encodeURIComponent(query)}` : '/api/releases';
+      const res = await fetch(url);
+      const data = await res.json();
+      const items = data.data || data.releases || data;
+      const tbody = document.getElementById('releaseTable');
+      tbody.innerHTML = '';
+
+      if (!items || !items.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--muted);">Keine Treffer.</td></tr>';
+        return;
+      }
+
+      items.forEach(r => {
+        const tr = document.createElement('tr');
+        const isNuked = !!r.nuked;
+        tr.innerHTML = `
+          <td>${r.id}</td>
+          <td style="word-break: break-all;"><strong>${r.release_name || r.name}</strong></td>
+          <td>${r.section || '-'}</td>
+          <td>${isNuked ? '<span class="tag tag-nuke">NUKED</span>' : '<span style="color: var(--success);">PRE</span>'}</td>
+          <td>
+            ${isNuked
+              ? `<button onclick="postAction(${r.id}, 'unnuke')">Unnuke</button>`
+              : `<button class="danger" onclick="postAction(${r.id}, 'nuke')">Nuke</button>`
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function postAction(id, action) {
+      if (!confirm(`Aktion "${action.toUpperCase()}" für ID ${id} wirklich ausführen?`)) return;
+      const res = await fetch(`/api/releases/${id}/${action}`, { method: 'POST' });
+      if (res.ok) {
+        loadReleases(document.getElementById('searchQuery').value);
+      } else {
+        alert('Aktion fehlgeschlagen oder keine Berechtigung.');
+      }
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      loadReleases(document.getElementById('searchQuery').value);
+    });
+
+    document.getElementById('searchQuery').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loadReleases(e.target.value);
+    });
+
+    checkAuth();
+  </script>
+</body>
+</html>

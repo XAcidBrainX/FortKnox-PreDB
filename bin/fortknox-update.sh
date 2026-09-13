@@ -9,6 +9,8 @@ BACKUP_PATH="$BACKUP_DIR/$TIMESTAMP"
 
 cd "$PROJECT_DIR" || exit 1
 
+export COMPOSER_ALLOW_SUPERUSER=1
+
 fail() {
     echo
     echo "[FEHLER] $1"
@@ -27,19 +29,20 @@ echo "       FortKnox PreDB Update System"
 echo "=============================================="
 echo
 
-echo "[1/9] Projekt prüfen..."
+echo "[1/11] Projekt prüfen..."
 
 [ -f "composer.json" ] || fail "composer.json fehlt."
 [ -f ".env" ] || fail ".env fehlt."
 [ -d "src" ] || fail "src fehlt."
 [ -d "public" ] || fail "public fehlt."
 [ -d "database/migrations" ] || fail "Migration-Verzeichnis fehlt."
+[ -d ".git" ] || fail "Git-Repository fehlt."
 
 ok "Projekt gefunden."
 
 
 echo
-echo "[2/9] Backup erstellen..."
+echo "[2/11] Backup erstellen..."
 
 mkdir -p "$BACKUP_PATH" \
     || fail "Backup-Verzeichnis konnte nicht erstellt werden."
@@ -47,6 +50,7 @@ mkdir -p "$BACKUP_PATH" \
 tar \
     --exclude='./storage/backups' \
     --exclude='./vendor' \
+    --exclude='./.git' \
     -czf "$BACKUP_PATH/fortknox-project.tar.gz" \
     . \
     || fail "Projekt-Backup fehlgeschlagen."
@@ -56,15 +60,60 @@ echo "     $BACKUP_PATH/fortknox-project.tar.gz"
 
 
 echo
-echo "[3/9] Git-Status prüfen..."
+echo "[3/11] Lokale Git-Änderungen prüfen..."
 
-git status --short
+if [ -n "$(git status --porcelain)" ]; then
+    echo
+    git status --short
+    fail "Lokale Git-Änderungen vorhanden. GitHub-Update wurde aus Sicherheitsgründen nicht ausgeführt."
+fi
 
-ok "Git-Status geprüft."
+ok "Git-Arbeitsbaum ist sauber."
 
 
 echo
-echo "[4/9] Composer prüfen..."
+echo "[4/11] GitHub prüfen..."
+
+git fetch origin \
+    || fail "GitHub konnte nicht erreicht werden."
+
+BRANCH="$(git branch --show-current)"
+
+[ "$BRANCH" = "main" ] \
+    || fail "Aktiver Branch ist '$BRANCH' statt 'main'."
+
+read -r BEHIND AHEAD < <(
+    git rev-list --left-right --count HEAD...origin/main
+)
+
+if [ "$AHEAD" -gt 0 ]; then
+    fail "Lokaler Branch enthält $AHEAD Commit(s), die noch nicht zu GitHub gepusht wurden."
+fi
+
+ok "GitHub-Verbindung OK."
+
+
+echo
+echo "[5/11] GitHub-Stand übernehmen..."
+
+if [ "$BEHIND" -gt 0 ]; then
+
+    echo "     $BEHIND neue Commit(s) auf GitHub gefunden."
+
+    git pull --ff-only origin main \
+        || fail "GitHub-Update fehlgeschlagen."
+
+    ok "GitHub-Stand erfolgreich übernommen."
+
+else
+
+    ok "Server ist bereits auf dem aktuellen GitHub-Stand."
+
+fi
+
+
+echo
+echo "[6/11] Composer prüfen..."
 
 command -v composer >/dev/null 2>&1 \
     || fail "Composer wurde nicht gefunden."
@@ -76,7 +125,7 @@ ok "Composer-Konfiguration OK."
 
 
 echo
-echo "[5/9] Datenbank-Migrationen ausführen..."
+echo "[7/11] Datenbank-Migrationen ausführen..."
 
 if [ ! -x "bin/fortknox-migrate" ]; then
     chmod +x bin/fortknox-migrate \
@@ -91,7 +140,7 @@ ok "Migrationen geprüft."
 
 
 echo
-echo "[6/9] Composer Autoloader aktualisieren..."
+echo "[8/11] Composer Autoloader aktualisieren..."
 
 composer dump-autoload --no-interaction \
     || fail "Composer Autoloader konnte nicht aktualisiert werden."
@@ -100,7 +149,7 @@ ok "Autoloader OK."
 
 
 echo
-echo "[7/9] PHP-Syntax prüfen..."
+echo "[9/11] PHP-Syntax prüfen..."
 
 PHP_ERRORS=0
 
@@ -126,7 +175,7 @@ ok "PHP-Syntax vollständig OK."
 
 
 echo
-echo "[8/9] Dashboard API testen..."
+echo "[10/11] Dashboard API testen..."
 
 if ! curl -fsS \
     --max-time 10 \
@@ -147,7 +196,7 @@ ok "Dashboard API OK."
 
 
 echo
-echo "[9/9] Release API testen..."
+echo "[11/11] Release API testen..."
 
 if ! curl -fsS \
     --max-time 10 \
@@ -172,6 +221,10 @@ echo "=============================================="
 echo "        FORTKNOX UPDATE ERFOLGREICH"
 echo "=============================================="
 echo
+echo "Git:"
+echo "  Branch: $BRANCH"
+echo "  GitHub: synchronisiert"
+echo
 echo "Backup:"
 echo "  $BACKUP_PATH/fortknox-project.tar.gz"
 echo
@@ -185,5 +238,5 @@ echo "API:"
 echo "  Dashboard OK"
 echo "  Release API OK"
 echo
-echo "FortKnox ist bereit. ������"
+echo "FortKnox ist bereit."
 echo

@@ -52,6 +52,11 @@ $router->get(
 );
 
 $router->get(
+    '/api/releases/live',
+    fn () => $releaseController->live($_GET)
+);
+
+$router->get(
     '/api/releases/{id}',
     fn (string $id) => $releaseController->show((int) $id)
 );

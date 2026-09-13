@@ -4,106 +4,62 @@ declare(strict_types=1);
 
 namespace FortKnox\PreDB;
 
-use PDO;
+use FortKnox\Notifications\WebhookService;
 
 final class ImportService
 {
     public function __construct(
-        private readonly PDO $pdo,
         private readonly ReleaseParser $parser,
         private readonly ReleaseRepository $repository,
+        private readonly ?WebhookService $webhookService = null,
     ) {
     }
 
-    public function import(string $releaseName): ImportResult
+    public function import(string $releaseName): ?ImportResult
     {
         $releaseName = trim($releaseName);
 
         if ($releaseName === '') {
-            throw new \InvalidArgumentException(
-                'Release name must not be empty.'
-            );
+            return null;
+        }
+
+        // Prüfen ob Release bereits existiert
+        $existing = $this->repository->findByName($releaseName);
+        if ($existing !== null) {
+            return null;
         }
 
         $parsed = $this->parser->parse($releaseName);
-
-        /*
-         * Existing release = duplicate announcement.
-         */
-        $existing = $this->repository->findByName(
-            $parsed->releaseName()
-        );
-
-        if ($existing !== null) {
-            $releaseId = (int) $existing['id'];
-
-            $this->pdo->beginTransaction();
-
-            try {
-                $this->repository->addEvent(
-                    $releaseId,
-                    'dupe',
-                    'Duplicate release announcement',
-                    'fortknox'
-                );
-
-                $this->pdo->commit();
-            } catch (\Throwable $exception) {
-                if ($this->pdo->inTransaction()) {
-                    $this->pdo->rollBack();
-                }
-
-                throw $exception;
-            }
-
-            return new ImportResult(
-                imported: false,
-                releaseId: $releaseId,
-                groupId: isset($existing['group_id'])
-                    ? (int) $existing['group_id']
-                    : null,
-                eventType: 'dupe',
-                release: $parsed,
-            );
-        }
-
-        /*
-         * Release creation is atomic.
-         */
-        $this->pdo->beginTransaction();
-
+        $groupId = $this->repository->findOrCreateGroup($parsed->group());
+        
         try {
-            $groupId = $this->repository->findOrCreateGroup(
-                $parsed->group()
-            );
-
-            $releaseId = $this->repository->createRelease(
-                $parsed,
-                $groupId
-            );
-
-            $this->repository->addEvent(
-                $releaseId,
-                'announce',
-                'Release imported',
-                'fortknox'
-            );
-
-            $this->pdo->commit();
-        } catch (\Throwable $exception) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-
-            throw $exception;
+            $releaseId = $this->repository->createRelease($parsed, $groupId);
+            $this->repository->addEvent($releaseId, 'announce', 'Release announced via IRC', 'irc');
+        } catch (\Throwable) {
+            return null;
         }
 
-        return new ImportResult(
-            imported: true,
-            releaseId: $releaseId,
-            groupId: $groupId,
-            eventType: 'announce',
-            release: $parsed,
-        );
+        // Release-Daten als Array laden
+        $releaseData = $this->repository->findByName($releaseName);
+        if ($releaseData === null) {
+            return null;
+        }
+
+        // Webhook an Discord senden
+        if ($this->webhookService !== null) {
+            try {
+                $category = $releaseData['category'] ?? 'Unknown';
+                $group = $parsed->group() ?? 'Unknown';
+                $this->webhookService->send(
+                    "Neues Release: {$releaseName}",
+                    "Kategorie: {$category}\nGruppe: {$group}",
+                    'release'
+                );
+            } catch (\Throwable $e) {
+                error_log("Webhook Error: " . $e->getMessage());
+            }
+        }
+
+        return new ImportResult($releaseData, []);
     }
 }

@@ -10,6 +10,7 @@ use FortKnox\IRC\AnnouncementHandler;
 use FortKnox\IRC\IrcClient;
 use FortKnox\IRC\IrcProtocolParser;
 use FortKnox\IRC\IrcSession;
+use FortKnox\Notifications\WebhookService;
 use FortKnox\PreDB\ImportService;
 use FortKnox\PreDB\ReleaseParser;
 use FortKnox\PreDB\ReleaseRepository;
@@ -72,14 +73,18 @@ try {
         $pdo
     );
 
+    $webhookService = new WebhookService($env);
     $importService = new ImportService(
-        $pdo,
         $parser,
-        $repository
+        $repository,
+        $webhookService
     );
 
+    $webhookService = new WebhookService($env);
+
     $announcementHandler = new AnnouncementHandler(
-        $importService
+        $importService,
+        $webhookService
     );
 
     /*
@@ -103,20 +108,33 @@ try {
         )
     );
 
-    $session = new IrcSession(
-        client: $client,
-        parser: $ircParser,
-        announcementHandler: $announcementHandler,
-        nickname: (string) $env['IRC_NICK'],
-        username: (string) $env['IRC_USERNAME'],
-        realname: (string) $env['IRC_REALNAME'],
-        channels: $channels,
-        password: !empty($env['IRC_PASSWORD'])
-            ? (string) $env['IRC_PASSWORD']
-            : null,
-    );
+    while (true) {
+        try {
+            $session = new IrcSession(
+                client: $client,
+                parser: $ircParser,
+                announcementHandler: $announcementHandler,
+                nickname: (string) $env['IRC_NICK'],
+                username: (string) $env['IRC_USERNAME'],
+                realname: (string) $env['IRC_REALNAME'],
+                channels: $channels,
+                password: !empty($env['IRC_PASSWORD'])
+                    ? (string) $env['IRC_PASSWORD']
+                    : null,
+            );
 
-    $session->run();
+            echo "[IRC] Starting session...
+";
+            $session->run();
+        } catch (\Throwable $e) {
+            echo "[IRC] Connection dropped: " . $e->getMessage() . "
+";
+        }
+        
+        echo "[IRC] Reconnecting in 5 seconds...
+";
+        sleep(5);
+    }
 
 } catch (\Throwable $exception) {
     fwrite(

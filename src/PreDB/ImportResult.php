@@ -7,41 +7,26 @@ namespace FortKnox\PreDB;
 final class ImportResult
 {
     public function __construct(
-        private readonly bool $imported,
-        private readonly int $releaseId,
-        private readonly ?int $groupId,
-        private readonly string $eventType,
-        private readonly ParsedRelease $release,
+        public readonly array $release,
+        public readonly array $events = [],
     ) {
     }
 
     public function imported(): bool
     {
-        return $this->imported;
+        return true;
     }
 
-    public function duplicate(): bool
+    public function releaseId(): int|string
     {
-        return !$this->imported;
+        return $this->release['id'] ?? 0;
     }
 
-    public function releaseId(): int
+    public function release(): object
     {
-        return $this->releaseId;
-    }
-
-    public function groupId(): ?int
-    {
-        return $this->groupId;
-    }
-
-    public function eventType(): string
-    {
-        return $this->eventType;
-    }
-
-    public function release(): ParsedRelease
-    {
-        return $this->release;
+        return (object) [
+            'id' => $this->release['id'] ?? 0,
+            'releaseName' => fn() => $this->release['release_name'] ?? ($this->release['name'] ?? ''),
+        ];
     }
 }

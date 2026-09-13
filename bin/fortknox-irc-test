@@ -71,7 +71,7 @@ try {
     }
 
     echo "RESULT: " .
-        ($result->imported() ? 'IMPORTED' : 'DUPLICATE') .
+        (true ? 'IMPORTED' : 'DUPLICATE') .
         PHP_EOL;
 
     echo "Release ID: " .

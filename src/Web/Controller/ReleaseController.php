@@ -301,6 +301,75 @@ JsonResponse::send([
             'releases' => $releases,
         ]);
     }
+    public function live(array $query): void
+    {
+        $pdo = $this->connection->get();
+
+        $afterId = max(
+            0,
+            (int) ($query['after_id'] ?? 0)
+        );
+
+        $limit = min(
+            100,
+            max(
+                1,
+                (int) ($query['limit'] ?? 25)
+            )
+        );
+
+        $stmt = $pdo->prepare(
+            'SELECT
+                r.id,
+                r.name,
+                r.title,
+                r.category,
+                r.year,
+                r.group_id,
+                g.name AS group_name,
+                r.season,
+                r.episode,
+                r.resolution,
+                r.language,
+                r.codec,
+                r.size_bytes,
+                r.source,
+                r.nuke,
+                r.created_at,
+                r.updated_at
+             FROM releases r
+             LEFT JOIN release_groups g
+                ON g.id = r.group_id
+             WHERE r.id > :after_id
+             ORDER BY r.id ASC
+             LIMIT 100'
+        );
+
+        $stmt->execute([
+            'after_id' => $afterId,
+        ]);
+
+        $releases = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (count($releases) > $limit) {
+            $releases = array_slice($releases, 0, $limit);
+        }
+
+        $latestId = $afterId;
+
+        if ($releases !== []) {
+            $latestId = (int) end($releases)['id'];
+        }
+
+        JsonResponse::send([
+            'success' => true,
+            'after_id' => $afterId,
+            'latest_id' => $latestId,
+            'count' => count($releases),
+            'releases' => $releases,
+        ]);
+    }
+
 public function events(int $releaseId): void
 {
     $pdo = $this->connection->get();

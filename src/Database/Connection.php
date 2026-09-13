@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace FortKnox\Database;
 
 use PDO;
-use PDOException;
 use RuntimeException;
 
 final class Connection
 {
     private ?PDO $pdo = null;
+    private array $config;
 
-    public function __construct(
-        private readonly array $config
-    ) {
+    public function __construct(array $config)
+    {
+        $this->config = $config;
     }
 
     public function get(): PDO
@@ -23,12 +23,12 @@ final class Connection
             return $this->pdo;
         }
 
-        $host = $this->config['host'] ?? '127.0.0.1';
-        $port = $this->config['port'] ?? 3306;
-        $database = $this->config['database'] ?? '';
-        $username = $this->config['username'] ?? '';
-        $password = $this->config['password'] ?? '';
-        $charset = $this->config['charset'] ?? 'utf8mb4';
+        $host = $this->config['host'] ?? $this->config['DB_HOST'] ?? '127.0.0.1';
+        $port = (int) ($this->config['port'] ?? $this->config['DB_PORT'] ?? 3306);
+        $database = $this->config['database'] ?? $this->config['DB_DATABASE'] ?? '';
+        $username = $this->config['username'] ?? $this->config['DB_USERNAME'] ?? '';
+        $password = $this->config['password'] ?? $this->config['DB_PASSWORD'] ?? '';
+        $charset = $this->config['charset'] ?? $this->config['DB_CHARSET'] ?? 'utf8mb4';
 
         if ($database === '' || $username === '') {
             throw new RuntimeException(
@@ -44,36 +44,11 @@ final class Connection
             $charset
         );
 
-        try {
-            $this->pdo = new PDO(
-                $dsn,
-                $username,
-                $password,
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                ]
-            );
-        } catch (PDOException $exception) {
-            throw new RuntimeException(
-                'Unable to connect to the FortKnox database.',
-                0,
-                $exception
-            );
-        }
+        $this->pdo = new PDO($dsn, $username, $password, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
 
         return $this->pdo;
-    }
-
-    public function ping(): bool
-    {
-        try {
-            return (bool) $this->get()
-                ->query('SELECT 1')
-                ->fetchColumn();
-        } catch (PDOException) {
-            return false;
-        }
     }
 }

@@ -72,7 +72,18 @@ final class IrcSession
 
         $this->register();
 
+        $lastKeepAlive = time();
+
         while ($this->running) {
+            if (time() - $lastKeepAlive > 60) {
+                try {
+                    $this->client->send("PING fortknox-keepalive");
+                } catch (\Throwable $e) {
+                    // Ignore, readLine will catch disconnection
+                }
+                $lastKeepAlive = time();
+            }
+
             $line = $this->client->readLine();
 
             if ($line === null) {
@@ -183,25 +194,11 @@ final class IrcSession
 
         if ($result === null) {
             echo '> Announcement ignored.' . PHP_EOL;
-
             return;
         }
 
-        if ($result->imported()) {
-            echo '> IMPORTED #' .
-                $result->releaseId() .
-                ' ' .
-                $result->release()->releaseName() .
-                PHP_EOL;
-
-            return;
-        }
-
-        echo '> DUPE #' .
-            $result->releaseId() .
-            ' ' .
-            $result->release()->releaseName() .
-            PHP_EOL;
+        echo '> RELEASE PROCESSED' . PHP_EOL;
+        return;
     }
 
     private function authenticateNickServ(): void

@@ -73,7 +73,7 @@ try {
     echo "Source:     " . ($release->source() ?? '-') . PHP_EOL;
     echo PHP_EOL;
 
-    if ($result->imported()) {
+    if ($result !== null) {
         echo "RESULT:     IMPORTED" . PHP_EOL;
         echo "Release ID: " . $result->releaseId() . PHP_EOL;
         echo "Group ID:   " . ($result->groupId() ?? '-') . PHP_EOL;

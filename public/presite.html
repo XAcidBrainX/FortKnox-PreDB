@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FortKnox PreDB - Public Release Feed</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .navbar, .card, .table {
+            background-color: #161b22;
+            border-color: #30363d;
+            color: #c9d1d9;
+        }
+        .card {
+            border: 1px solid #30363d;
+        }
+        .table {
+            color: #c9d1d9;
+        }
+        .table-dark {
+            background-color: #161b22;
+            border-color: #30363d;
+        }
+        .form-control, .form-select {
+            background-color: #0d1117;
+            border-color: #30363d;
+            color: #c9d1d9;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #0d1117;
+            border-color: #58a6ff;
+            color: #c9d1d9;
+            box-shadow: 0 0 0 0.25rem rgba(88, 166, 255, 0.25);
+        }
+        .badge-movie { background-color: #238636; }
+        .badge-tv { background-color: #1f6feb; }
+        .badge-game { background-color: #8957e5; }
+        .badge-default { background-color: #30363d; }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark border-bottom border-secondary mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/presite.html">🛡️ FortKnox PreDB</a>
+            <div class="d-flex">
+                <a href="/dashboard.html" class="btn btn-outline-secondary btn-sm">Admin Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Stats Row -->
+        <div class="row text-center mb-4" id="stats-row">
+            <div class="col-md-3 mb-2">
+                <div class="card p-3">
+                    <div class="text-muted small">Releases Gesamt</div>
+                    <div class="fs-4 fw-bold" id="stat-releases">-</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card p-3">
+                    <div class="text-muted small">Release Groups</div>
+                    <div class="fs-4 fw-bold" id="stat-groups">-</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card p-3">
+                    <div class="text-muted small">Events</div>
+                    <div class="fs-4 fw-bold" id="stat-events">-</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card p-3">
+                    <div class="text-muted small">Nuked</div>
+                    <div class="fs-4 fw-bold text-danger" id="stat-nuked">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filter Section -->
+        <div class="card p-4 mb-4">
+            <h5 class="mb-3">🔍 Release Suche</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" id="search-q" class="form-control" placeholder="Suche nach Name...">
+                </div>
+                <div class="col-md-3">
+                    <select id="search-category" class="form-select">
+                        <option value="">Alle Kategorien</option>
+                        <option value="MOVIE">MOVIE</option>
+                        <option value="TV">TV</option>
+                        <option value="GAME">GAME</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" id="search-group" class="form-control" placeholder="Gruppe (z.B. GRP)">
+                </div>
+                <div class="col-md-2">
+                    <button id="btn-search" class="btn btn-primary w-100">Suchen</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Releases Table -->
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">📋 Neueste Releases</h5>
+                <span class="text-muted small" id="results-count">Lade...</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Release Name</th>
+                            <th>Gruppe</th>
+                            <th>Kategorie</th>
+                            <th>Auflösung</th>
+                            <th>Source</th>
+                            <th>Zeitpunkt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="releases-tbody">
+                        <tr><td colspan="7" class="text-center text-muted">Lade Releases...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <button id="btn-prev" class="btn btn-outline-secondary btn-sm" disabled>&larr; Zurück</button>
+                <span id="page-indicator" class="text-muted small">Seite 1 / 1</span>
+                <button id="btn-next" class="btn btn-outline-secondary btn-sm" disabled>Weiter &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-muted py-4 mt-5 border-top border-secondary small">
+        FortKnox PreDB Suite &bull; Public PreSite
+    </footer>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+
+        async function loadDashboardStats() {
+            try {
+                const res = await fetch('/api/dashboard');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && json.stats) {
+                        document.getElementById('stat-releases').textContent = json.stats.releases ?? 0;
+                        document.getElementById('stat-groups').textContent = json.stats.groups ?? 0;
+                        document.getElementById('stat-events').textContent = json.stats.events ?? 0;
+                        document.getElementById('stat-nuked').textContent = json.stats.nuked ?? 0;
+                    }
+                }
+            } catch (e) {
+                console.error('Fehler beim Laden der Stats:', e);
+            }
+        }
+
+        async function loadReleases() {
+            const q = document.getElementById('search-q').value.trim();
+            const category = document.getElementById('search-category').value;
+            const group = document.getElementById('search-group').value.trim();
+
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: 20,
+                sort: 'id',
+                order: 'DESC'
+            });
+
+            if (q) params.set('q', q);
+            if (category) params.set('category', category);
+            if (group) params.set('group', group);
+
+            try {
+                const res = await fetch('/api/releases/search?' + params.toString());
+                if (!res.ok) throw new Error('Netzwerkfehler');
+                const data = await res.json();
+
+                const tbody = document.getElementById('releases-tbody');
+                tbody.innerHTML = '';
+
+                document.getElementById('results-count').textContent = `${data.total || 0} Release(s) gefunden`;
+                totalPages = data.pages || 1;
+                document.getElementById('page-indicator').textContent = `Seite ${data.page || 1} / ${totalPages}`;
+                document.getElementById('btn-prev').disabled = (data.page || 1) <= 1;
+                document.getElementById('btn-next').disabled = (data.page || 1) >= totalPages;
+
+                if (!data.releases || data.releases.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Keine Releases gefunden.</td></tr>';
+                    return;
+                }
+
+                data.releases.forEach(r => {
+                    const tr = document.createElement('tr');
+                    
+                    let badgeClass = 'badge-default';
+                    if (r.category === 'MOVIE') badgeClass = 'badge-movie';
+                    if (r.category === 'TV') badgeClass = 'badge-tv';
+                    if (r.category === 'GAME') badgeClass = 'badge-game';
+
+                    tr.innerHTML = `
+                        <td>${r.id}</td>
+                        <td class="fw-bold text-light">${escapeHtml(r.name)}</td>
+                        <td><span class="text-info">${escapeHtml(r.group_name || '-') }</span></td>
+                        <td><span class="badge ${badgeClass}">${escapeHtml(r.category || '-')}</span></td>
+                        <td>${escapeHtml(r.resolution || '-')}</td>
+                        <td>${escapeHtml(r.source || '-')}</td>
+                        <td class="text-muted small">${escapeHtml(r.created_at || '-')}</td>
+                    `;
+                    tbody.append(tr);
+                });
+
+            } catch (e) {
+                console.error('Fehler beim Laden der Releases:', e);
+                document.getElementById('releases-tbody').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Fehler beim Laden der Releases.</td></tr>';
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+        }
+
+        document.getElementById('btn-search').addEventListener('click', () => {
+            currentPage = 1;
+            loadReleases();
+        });
+
+        document.getElementById('search-q').addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                currentPage = 1;
+                loadReleases();
+            }
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                loadReleases();
+            }
+        });
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadReleases();
+            }
+        });
+
+        // Init
+        loadDashboardStats();
+        loadReleases();
+    </script>
+</body>
+</html>

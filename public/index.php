@@ -39,7 +39,8 @@ $releaseController = new ReleaseController($connection);
 $dashboardController = new DashboardController($connection);
 $authController = new AuthController(
     (string) ($env['ADMIN_USER'] ?? 'admin'),
-    (string) ($env['ADMIN_PASSWORD_HASH'] ?? '')
+    (string) ($env['ADMIN_PASSWORD_HASH'] ?? ''),
+    $connection
 );
 
 $router = new Router();
@@ -56,6 +57,7 @@ $router->get('/api/dashboard', [$dashboardController, 'index']);
 $router->post('/api/auth/login', [$authController, 'login']);
 $router->post('/api/auth/logout', [$authController, 'logout']);
 $router->get('/api/auth/status', [$authController, 'status']);
+$router->get('/api/admin/stats', [$authController, 'stats']);
 
 // Admin Protected Actions
 $requireAuth = function (callable $action) {
@@ -70,6 +72,15 @@ $requireAuth = function (callable $action) {
     };
 };
 
+// Bot Management APIs
+$router->get('/api/admin/bots', $requireAuth([$authController, 'listBots']));
+$router->post('/api/admin/bots', $requireAuth([$authController, 'saveBot']));
+$router->post('/api/admin/bots/{id}/start', $requireAuth(fn (string $id) => $authController->toggleBotService((int) $id, 'start')));
+$router->post('/api/admin/bots/{id}/stop', $requireAuth(fn (string $id) => $authController->toggleBotService((int) $id, 'stop')));
+$router->post('/api/admin/bots/{id}/restart', $requireAuth(fn (string $id) => $authController->toggleBotService((int) $id, 'restart')));
+$router->post('/api/admin/bots/{id}/delete', $requireAuth(fn (string $id) => $authController->deleteBot((int) $id)));
+
+// Release Moderation APIs
 $router->post('/api/releases/{id}/nuke', $requireAuth(fn (string $id) => $releaseController->nuke((int) $id)));
 $router->post('/api/releases/{id}/unnuke', $requireAuth(fn (string $id) => $releaseController->unnuke((int) $id)));
 $router->post('/api/releases/{id}/dupe', $requireAuth(fn (string $id) => $releaseController->dupe((int) $id)));

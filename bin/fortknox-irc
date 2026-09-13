@@ -29,29 +29,9 @@ if ($env === false) {
     exit(1);
 }
 
-$required = [
-    'IRC_HOST',
-    'IRC_PORT',
-    'IRC_NICK',
-    'IRC_USERNAME',
-    'IRC_REALNAME',
-    'IRC_CHANNELS',
-];
+$options = getopt('', ['network-id:']);
+$networkId = isset($options['network-id']) ? (int) $options['network-id'] : 1;
 
-foreach ($required as $key) {
-    if (!isset($env[$key]) || trim((string) $env[$key]) === '') {
-        fwrite(
-            STDERR,
-            "Missing IRC configuration: {$key}\n"
-        );
-
-        exit(1);
-    }
-}
-
-/*
- * Database
- */
 $connection = new Connection([
     'host' => $env['DB_HOST'] ?? '127.0.0.1',
     'port' => (int) ($env['DB_PORT'] ?? 3306),
@@ -61,89 +41,74 @@ $connection = new Connection([
     'charset' => $env['DB_CHARSET'] ?? 'utf8mb4',
 ]);
 
-try {
-    $pdo = $connection->get();
+$pdo = $connection->get();
+$stmt = $pdo->prepare('SELECT * FROM irc_networks WHERE id = ? LIMIT 1');
+$stmt->execute([$networkId]);
+$network = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    /*
-     * PreDB pipeline
-     */
-    $parser = new ReleaseParser();
-
-    $repository = new ReleaseRepository(
-        $pdo
-    );
-
-    $webhookService = new WebhookService($env);
-    $importService = new ImportService(
-        $parser,
-        $repository,
-        $webhookService
-    );
-
-    $webhookService = new WebhookService($env);
-
-    $announcementHandler = new AnnouncementHandler(
-        $importService,
-        $webhookService
-    );
-
-    /*
-     * IRC
-     */
-    $client = new IrcClient(
-        host: (string) $env['IRC_HOST'],
-        port: (int) $env['IRC_PORT'],
-        tls: filter_var(
-            $env['IRC_TLS'] ?? true,
-            FILTER_VALIDATE_BOOLEAN
-        )
-    );
-
-    $ircParser = new IrcProtocolParser();
-
-    $channels = array_filter(
-        array_map(
-            'trim',
-            explode(',', (string) $env['IRC_CHANNELS'])
-        )
-    );
-
-    while (true) {
-        try {
-            $session = new IrcSession(
-                client: $client,
-                parser: $ircParser,
-                announcementHandler: $announcementHandler,
-                nickname: (string) $env['IRC_NICK'],
-                username: (string) $env['IRC_USERNAME'],
-                realname: (string) $env['IRC_REALNAME'],
-                channels: $channels,
-                password: !empty($env['IRC_PASSWORD'])
-                    ? (string) $env['IRC_PASSWORD']
-                    : null,
-            );
-
-            echo "[IRC] Starting session...
-";
-            $session->run();
-        } catch (\Throwable $e) {
-            echo "[IRC] Connection dropped: " . $e->getMessage() . "
-";
-        }
-        
-        echo "[IRC] Reconnecting in 5 seconds...
-";
-        sleep(5);
+if (!$network) {
+    if (empty($env['IRC_HOST'])) {
+        fwrite(STDERR, "Network ID {$networkId} not found and no .env fallback available.\n");
+        exit(1);
     }
-
-} catch (\Throwable $exception) {
-    fwrite(
-        STDERR,
-        PHP_EOL .
-        'FortKnox IRC FAILED: ' .
-        $exception->getMessage() .
-        PHP_EOL
-    );
-
-    exit(1);
+    $host = (string) $env['IRC_HOST'];
+    $port = (int) ($env['IRC_PORT'] ?? 6697);
+    $tls = !empty($env['IRC_TLS']) && $env['IRC_TLS'] !== 'false';
+    $nick = (string) ($env['IRC_NICK'] ?? 'FK-PreDB');
+    $username = (string) ($env['IRC_USERNAME'] ?? 'fortknox-predb');
+    $realname = (string) ($env['IRC_REALNAME'] ?? 'FortKnox PreDB');
+    $password = !empty($env['IRC_PASSWORD']) ? (string) $env['IRC_PASSWORD'] : null;
+    $channels = array_filter(array_map('trim', explode(',', (string) ($env['IRC_CHANNELS'] ?? '#predb'))));
+} else {
+    if (empty($network['is_enabled'])) {
+        echo "[IRC] Network '{$network['name']}' (ID: {$networkId}) is disabled. Exiting.\n";
+        exit(0);
+    }
+    $host = (string) $network['host'];
+    $port = (int) $network['port'];
+    $tls = (bool) $network['tls'];
+    $nick = (string) $network['nick'];
+    $username = (string) $network['username'];
+    $realname = (string) $network['realname'];
+    $password = !empty($network['password']) ? (string) $network['password'] : null;
+    $channels = array_filter(array_map('trim', explode(',', (string) $network['channels'])));
 }
+
+$webhookUrl = (string) ($env['WEBHOOK_URL'] ?? '');
+$webhookEnabled = filter_var($env['WEBHOOK_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+$releaseRepository = new ReleaseRepository($pdo);
+$releaseParser = new ReleaseParser();
+$webhookService = new WebhookService($env);
+$importService = new ImportService(
+    $releaseRepository,
+    $releaseParser,
+    $webhookService
+);
+
+$announcementHandler = new AnnouncementHandler(
+    $importService,
+    $releaseParser
+);
+
+$protocolParser = new IrcProtocolParser();
+
+$client = new IrcClient(
+    $host,
+    $port,
+    $tls,
+    $nick,
+    $username,
+    $realname,
+    $password,
+    $channels
+);
+
+$session = new IrcSession(
+    $client,
+    $protocolParser,
+    $announcementHandler
+);
+
+echo "[IRC] Starting session for '{$nick}' on {$host}:{$port}...\n";
+$session->run();

@@ -19,6 +19,10 @@
         }
 
         header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
             background: #171a21;
             border-bottom: 1px solid #292e38;
             padding: 20px 30px;
@@ -75,6 +79,10 @@
         }
 
         .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
             padding: 18px 22px;
             border-bottom: 1px solid #292e38;
             font-size: 18px;
@@ -408,14 +416,36 @@
 
         }
 
-</style>
+.admin-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #252b36;
+            color: #38bdf8;
+            border: 1px solid #3b4455;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        .admin-btn:hover {
+            background: #333d4d;
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+    </style>
 </head>
 
 <body>
 
 <header>
-    <h1>🛡️ FortKnox PreDB</h1>
-    <span>PreDB Management &amp; Release Intelligence</span>
+    <div>
+        <h1>🛡️ FortKnox PreDB</h1>
+        <span>PreDB Management &amp; Release Intelligence</span>
+    </div>
+    <a href="/admin.html" class="admin-btn">🔒 Admin Login</a>
 </header>
 
 <main>

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>FortKnox PreDB - Admin Panel</title>
+  <title>FortKnox PreDB - Control Center</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root {
@@ -14,30 +14,43 @@
       --primary: #38bdf8;
       --danger: #ef4444;
       --success: #22c55e;
+      --warning: #f59e0b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--bg); color: var(--text); padding: 24px; }
-    .container { max-width: 1000px; margin: 0 auto; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .container { max-width: 1150px; margin: 0 auto; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
     h1, h2 { margin-bottom: 16px; font-size: 1.25rem; color: var(--primary); }
-    input, button { padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border); background: #0b0f15; color: var(--text); font-family: inherit; }
-    input:focus { outline: none; border-color: var(--primary); }
+    input, button, select { padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border); background: #0b0f15; color: var(--text); font-family: inherit; font-size: 0.85rem; }
+    input:focus, select:focus { outline: none; border-color: var(--primary); }
     button { cursor: pointer; background: #1e293b; transition: background 0.15s; }
     button:hover { background: #334155; }
+    button.primary { background: #0284c7; border-color: #0284c7; color: #fff; }
+    button.primary:hover { background: #0369a1; }
     button.danger { background: #7f1d1d; border-color: #991b1b; }
     button.danger:hover { background: var(--danger); }
-    .flex { display: flex; gap: 8px; align-items: center; }
+    button.success { background: #14532d; border-color: #166534; }
+    button.success:hover { background: var(--success); }
+    .flex { display: flex; gap: 10px; align-items: center; }
     .hidden { display: none !important; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .stat-box { background: #0b0f15; border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+    .stat-value { font-size: 1.35rem; font-weight: bold; color: #fff; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
     th { color: var(--muted); }
     .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+    .tag-active { background: #052e16; color: #4ade80; border: 1px solid #166534; }
+    .tag-inactive { background: #450a0a; color: #f87171; border: 1px solid #991b1b; }
     .tag-nuke { background: #450a0a; color: #f87171; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.75rem; color: var(--muted); }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Login View -->
     <div id="loginView" class="card" style="max-width: 400px; margin: 60px auto;">
       <h1>FortKnox Admin Login</h1>
       <form id="loginForm">
@@ -47,19 +60,112 @@
         <div style="margin-bottom: 16px;">
           <input type="password" id="password" placeholder="Passwort" style="width: 100%;" required>
         </div>
-        <button type="submit" style="width: 100%; background: #0284c7;">Anmelden</button>
+        <button type="submit" class="primary" style="width: 100%;">Anmelden</button>
         <div id="loginError" style="color: var(--danger); margin-top: 10px; font-size: 0.85rem;"></div>
       </form>
     </div>
 
-    <!-- Admin Panel View -->
     <div id="adminView" class="hidden">
       <div class="flex" style="justify-content: space-between; margin-bottom: 20px;">
-        <h1>FortKnox Control Center</h1>
+        <div>
+          <h1 style="margin: 0;">🛡️ FortKnox Control Center</h1>
+          <span style="font-size: 0.8rem; color: var(--muted);"><a href="/dashboard.html" style="color: var(--primary); text-decoration: none;">&larr; Zum Live Dashboard</a></span>
+        </div>
         <div class="flex">
           <span id="userDisplay" style="color: var(--muted); font-size: 0.85rem;"></span>
           <button id="logoutBtn">Abmelden</button>
         </div>
+      </div>
+
+      <div class="grid">
+        <div class="stat-box">
+          <div class="stat-label">Aktive IRC-Bots</div>
+          <div class="stat-value" id="statBots">-</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Releases Heute</div>
+          <div class="stat-value" id="statToday">-</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Releases Gesamt</div>
+          <div class="stat-value" id="statTotal">-</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">MariaDB Größe</div>
+          <div class="stat-value" id="statDbSize">-</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex" style="justify-content: space-between;">
+          <h2>IRC Bots & Netzwerke</h2>
+          <button id="newBotBtn" class="primary">+ Neues Netzwerk hinzufügen</button>
+        </div>
+
+        <div id="botFormContainer" class="hidden" style="background: #0d1219; border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin: 16px 0;">
+          <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: var(--primary);" id="formTitle">Bot konfigurieren</h3>
+          <form id="botForm">
+            <input type="hidden" id="botId">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Netzwerk Name</label>
+                <input type="text" id="botName" placeholder="z. B. EFnet, LinkNet" required>
+              </div>
+              <div class="form-group">
+                <label>IRC Host</label>
+                <input type="text" id="botHost" placeholder="irc.server.org" required>
+              </div>
+              <div class="form-group">
+                <label>Port</label>
+                <input type="number" id="botPort" value="6697" required>
+              </div>
+              <div class="form-group">
+                <label>TLS / SSL</label>
+                <select id="botTls">
+                  <option value="1">Aktiviert (SSL/TLS)</option>
+                  <option value="0">Deaktiviert (Plain)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Nickname</label>
+                <input type="text" id="botNick" placeholder="FK-Bot" required>
+              </div>
+              <div class="form-group">
+                <label>Ident / Username</label>
+                <input type="text" id="botUser" value="fortknox">
+              </div>
+              <div class="form-group">
+                <label>Server Passwort / NickServ (optional)</label>
+                <input type="password" id="botPass" placeholder="Leer lassen falls unverändert">
+              </div>
+              <div class="form-group">
+                <label>Channels (kommagetrennt)</label>
+                <input type="text" id="botChannels" value="#predb" required>
+              </div>
+            </div>
+            <div class="flex" style="margin-top: 16px; justify-content: flex-end;">
+              <button type="button" id="cancelBotBtn">Abbrechen</button>
+              <button type="submit" class="primary">Speichern & Aktivieren</button>
+            </div>
+          </form>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Netzwerk</th>
+              <th>Server</th>
+              <th>Nick</th>
+              <th>Channels</th>
+              <th>Status</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="botTable">
+            <tr><td colspan="7" style="text-align: center; color: var(--muted);">Lädt Netzwerke...</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <div class="card">
@@ -79,7 +185,7 @@
             </tr>
           </thead>
           <tbody id="releaseTable">
-            <tr><td colspan="5" style="text-align: center; color: var(--muted);">Suchbegriff eingeben oder leere Suche für aktuelle Releases.</td></tr>
+            <tr><td colspan="5" style="text-align: center; color: var(--muted);">Lädt...</td></tr>
           </tbody>
         </table>
       </div>
@@ -87,6 +193,8 @@
   </div>
 
   <script>
+    let botCache = [];
+
     async function checkAuth() {
       const res = await fetch('/api/auth/status');
       const data = await res.json();
@@ -94,6 +202,8 @@
         document.getElementById('loginView').classList.add('hidden');
         document.getElementById('adminView').classList.remove('hidden');
         document.getElementById('userDisplay').textContent = `Eingeloggt als: ${data.user}`;
+        loadStats();
+        loadBots();
         loadReleases();
       } else {
         document.getElementById('loginView').classList.remove('hidden');
@@ -101,29 +211,134 @@
       }
     }
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const err = document.getElementById('loginError');
-      err.textContent = '';
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: document.getElementById('username').value,
-          password: document.getElementById('password').value
-        })
-      });
-      if (res.ok) {
-        checkAuth();
-      } else {
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        if (!res.ok) return;
         const d = await res.json();
-        err.textContent = d.error || 'Login fehlgeschlagen.';
+        document.getElementById('statBots').textContent = `${d.active_bots} Online`;
+        document.getElementById('statToday').textContent = Number(d.today_releases).toLocaleString();
+        document.getElementById('statTotal').textContent = Number(d.total_releases).toLocaleString();
+        document.getElementById('statDbSize').textContent = `${d.db_size_mb} MB`;
+      } catch (e) {
+        console.error(e);
       }
+    }
+
+    async function loadBots() {
+      try {
+        const res = await fetch('/api/admin/bots');
+        const d = await res.json();
+        botCache = d.bots || [];
+        const tbody = document.getElementById('botTable');
+        tbody.innerHTML = '';
+
+        if (!botCache.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">Keine IRC-Bots konfiguriert.</td></tr>';
+          return;
+        }
+
+        botCache.forEach(b => {
+          const isUp = b.service_status === 'active';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>#${b.id}</td>
+            <td><strong>${b.name}</strong></td>
+            <td>${b.host}:${b.port} ${b.tls ? '🔒' : ''}</td>
+            <td>${b.nick}</td>
+            <td><code style="color: var(--primary);">${b.channels}</code></td>
+            <td><span class="tag ${isUp ? 'tag-active' : 'tag-inactive'}">${b.service_status.toUpperCase()}</span></td>
+            <td>
+              <div class="flex">
+                ${isUp 
+                  ? `<button class="danger" onclick="botAction(${b.id}, 'stop')">Stop</button><button onclick="botAction(${b.id}, 'restart')">Restart</button>` 
+                  : `<button class="success" onclick="botAction(${b.id}, 'start')">Start</button>`
+                }
+                <button onclick="editBot(${b.id})">Edit</button>
+                <button class="danger" onclick="deleteBot(${b.id})">×</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function botAction(id, action) {
+      const res = await fetch(`/api/admin/bots/${id}/${action}`, { method: 'POST' });
+      if (res.ok) {
+        setTimeout(() => { loadBots(); loadStats(); }, 500);
+      } else {
+        alert(`Aktion ${action} fehlgeschlagen.`);
+      }
+    }
+
+    async function deleteBot(id) {
+      if (!confirm(`Möchtest du Bot #${id} wirklich löschen und stoppen?`)) return;
+      const res = await fetch(`/api/admin/bots/${id}/delete`, { method: 'POST' });
+      if (res.ok) {
+        loadBots();
+        loadStats();
+      }
+    }
+
+    function editBot(id) {
+      const b = botCache.find(x => Number(x.id) === Number(id));
+      if (!b) return;
+      document.getElementById('botId').value = b.id;
+      document.getElementById('botName').value = b.name;
+      document.getElementById('botHost').value = b.host;
+      document.getElementById('botPort').value = b.port;
+      document.getElementById('botTls').value = b.tls ? "1" : "0";
+      document.getElementById('botNick').value = b.nick;
+      document.getElementById('botUser').value = b.username;
+      document.getElementById('botPass').value = '';
+      document.getElementById('botChannels').value = b.channels;
+      document.getElementById('formTitle').textContent = `Bot #${b.id} bearbeiten (${b.name})`;
+      document.getElementById('botFormContainer').classList.remove('hidden');
+    }
+
+    document.getElementById('newBotBtn').addEventListener('click', () => {
+      document.getElementById('botForm').reset();
+      document.getElementById('botId').value = '';
+      document.getElementById('formTitle').textContent = 'Neues IRC Netzwerk hinzufügen';
+      document.getElementById('botFormContainer').classList.remove('hidden');
     });
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      checkAuth();
+    document.getElementById('cancelBotBtn').addEventListener('click', () => {
+      document.getElementById('botFormContainer').classList.add('hidden');
+    });
+
+    document.getElementById('botForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        id: document.getElementById('botId').value || null,
+        name: document.getElementById('botName').value,
+        host: document.getElementById('botHost').value,
+        port: Number(document.getElementById('botPort').value),
+        tls: document.getElementById('botTls').value === '1',
+        nick: document.getElementById('botNick').value,
+        username: document.getElementById('botUser').value,
+        password: document.getElementById('botPass').value,
+        channels: document.getElementById('botChannels').value
+      };
+
+      const res = await fetch('/api/admin/bots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        document.getElementById('botFormContainer').classList.add('hidden');
+        loadBots();
+        loadStats();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Speichern fehlgeschlagen.');
+      }
     });
 
     async function loadReleases(query = '') {
@@ -163,10 +378,35 @@
       const res = await fetch(`/api/releases/${id}/${action}`, { method: 'POST' });
       if (res.ok) {
         loadReleases(document.getElementById('searchQuery').value);
+        loadStats();
       } else {
         alert('Aktion fehlgeschlagen oder keine Berechtigung.');
       }
     }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('loginError');
+      err.textContent = '';
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value
+        })
+      });
+      if (res.ok) checkAuth();
+      else {
+        const d = await res.json();
+        err.textContent = d.error || 'Login fehlgeschlagen.';
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      checkAuth();
+    });
 
     document.getElementById('searchBtn').addEventListener('click', () => {
       loadReleases(document.getElementById('searchQuery').value);

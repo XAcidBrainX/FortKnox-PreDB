@@ -23,16 +23,25 @@ ok() {
     echo "[OK] $1"
 }
 
+APP_VERSION="$(cat APP_VERSION 2>/dev/null || echo "unknown")"
+APP_BUILD="$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+APP_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
+
 echo
 echo "=============================================="
 echo "       FortKnox PreDB Update System"
 echo "=============================================="
+echo
+echo "Version: $APP_VERSION"
+echo "Build:   $APP_BUILD"
+echo "Branch:  $APP_BRANCH"
 echo
 
 echo "[1/11] Projekt prüfen..."
 
 [ -f "composer.json" ] || fail "composer.json fehlt."
 [ -f ".env" ] || fail ".env fehlt."
+[ -f "APP_VERSION" ] || fail "APP_VERSION fehlt."
 [ -d "src" ] || fail "src fehlt."
 [ -d "public" ] || fail "public fehlt."
 [ -d "database/migrations" ] || fail "Migration-Verzeichnis fehlt."
@@ -110,6 +119,10 @@ else
     ok "Server ist bereits auf dem aktuellen GitHub-Stand."
 
 fi
+
+
+APP_VERSION="$(cat APP_VERSION 2>/dev/null || echo "unknown")"
+APP_BUILD="$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")"
 
 
 echo
@@ -221,8 +234,12 @@ echo "=============================================="
 echo "        FORTKNOX UPDATE ERFOLGREICH"
 echo "=============================================="
 echo
+echo "FortKnox:"
+echo "  Version: $APP_VERSION"
+echo "  Build:   $APP_BUILD"
+echo "  Branch:  $BRANCH"
+echo
 echo "Git:"
-echo "  Branch: $BRANCH"
 echo "  GitHub: synchronisiert"
 echo
 echo "Backup:"

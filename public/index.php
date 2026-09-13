@@ -79,7 +79,58 @@ $router->post('/api/admin/bots/{id}/start', $requireAuth(fn (string $id) => $aut
 $router->post('/api/admin/bots/{id}/stop', $requireAuth(fn (string $id) => $authController->toggleBotService((int) $id, 'stop')));
 $router->post('/api/admin/bots/{id}/restart', $requireAuth(fn (string $id) => $authController->toggleBotService((int) $id, 'restart')));
 $router->post('/api/admin/bots/{id}/delete', $requireAuth(fn (string $id) => $authController->deleteBot((int) $id)));
+// --- External Sources Admin Routes ---
+$router->get('/api/admin/sources', $requireAuth(function () use ($connection) {
+    header('Content-Type: application/json');
+    $pdo = $connection->get();
+    $stmt = $pdo->query('SELECT * FROM external_sources ORDER BY id ASC');
+    echo json_encode(['success' => true, 'sources' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+}));
 
+$router->post('/api/admin/sources', $requireAuth(function () use ($connection) {
+    header('Content-Type: application/json');
+    $pdo = $connection->get();
+    $input = json_decode(file_get_contents('php://input'), true) ?: [];
+    $id = !empty($input['id']) ? (int) $input['id'] : null;
+    $name = trim((string) ($input['name'] ?? ''));
+    $url = trim((string) ($input['url'] ?? ''));
+    $type = trim((string) ($input['type'] ?? 'rss'));
+    $enabled = isset($input['enabled']) ? (int) $input['enabled'] : 1;
+    $interval = (int) ($input['sync_interval_min'] ?? 5);
+
+    if ($name === '' || $url === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Name und URL sind erforderlich.']);
+        return;
+    }
+
+    if ($id) {
+        $stmt = $pdo->prepare('UPDATE external_sources SET name = ?, url = ?, type = ?, enabled = ?, sync_interval_min = ? WHERE id = ?');
+        $stmt->execute([$name, $url, $type, $enabled, $interval, $id]);
+    } else {
+        $stmt = $pdo->prepare('INSERT INTO external_sources (name, url, type, enabled, sync_interval_min) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $url, $type, $enabled, $interval]);
+    }
+    echo json_encode(['success' => true]);
+}));
+
+$router->post('/api/admin/sources/{id}/toggle', $requireAuth(function (string $id) use ($connection) {
+    header('Content-Type: application/json');
+    $pdo = $connection->get();
+    $input = json_decode(file_get_contents('php://input'), true) ?: [];
+    $enabled = !empty($input['enabled']) ? 1 : 0;
+    $stmt = $pdo->prepare('UPDATE external_sources SET enabled = ? WHERE id = ?');
+    $stmt->execute([$enabled, (int) $id]);
+    echo json_encode(['success' => true]);
+}));
+
+$router->post('/api/admin/sources/{id}/delete', $requireAuth(function (string $id) use ($connection) {
+    header('Content-Type: application/json');
+    $pdo = $connection->get();
+    $stmt = $pdo->prepare('DELETE FROM external_sources WHERE id = ?');
+    $stmt->execute([(int) $id]);
+    echo json_encode(['success' => true]);
+}));
 // Release Moderation APIs
 $router->post('/api/releases/{id}/nuke', $requireAuth(fn (string $id) => $releaseController->nuke((int) $id)));
 $router->post('/api/releases/{id}/unnuke', $requireAuth(fn (string $id) => $releaseController->unnuke((int) $id)));

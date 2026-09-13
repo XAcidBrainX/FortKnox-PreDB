@@ -71,6 +71,7 @@ if (!$network) {
     $username = (string) $network['username'];
     $realname = (string) $network['realname'];
     $password = !empty($network['password']) ? (string) $network['password'] : null;
+    $nickServPassword = !empty($network['nickserv_password']) ? (string) $network['nickserv_password'] : null;
     $channels = array_filter(array_map('trim', explode(',', (string) $network['channels'])));
 }
 
@@ -81,33 +82,31 @@ $releaseRepository = new ReleaseRepository($pdo);
 $releaseParser = new ReleaseParser();
 $webhookService = new WebhookService($env);
 $importService = new ImportService(
-    $releaseRepository,
     $releaseParser,
+    $releaseRepository,
     $webhookService
 );
 
-$announcementHandler = new AnnouncementHandler(
-    $importService,
-    $releaseParser
-);
+$announcementHandler = new AnnouncementHandler($importService, $webhookService);
 
 $protocolParser = new IrcProtocolParser();
 
 $client = new IrcClient(
     $host,
     $port,
-    $tls,
-    $nick,
-    $username,
-    $realname,
-    $password,
-    $channels
+    $tls
 );
 
 $session = new IrcSession(
     $client,
     $protocolParser,
-    $announcementHandler
+    $announcementHandler,
+    $nick,
+    $username,
+    $realname,
+    $channels,
+    $password,
+    $nickServPassword
 );
 
 echo "[IRC] Starting session for '{$nick}' on {$host}:{$port}...\n";

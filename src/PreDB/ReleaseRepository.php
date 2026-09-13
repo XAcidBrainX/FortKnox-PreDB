@@ -207,4 +207,25 @@ final class ReleaseRepository
 
         return (int) $this->pdo->lastInsertId();
     }
+    public function queueIrcAnnounce(int $networkId, string $channel, string $message): void
+    {
+        $stmt = $this->pdo->prepare("INSERT INTO irc_outbox (network_id, channel, message) VALUES (?, ?, ?)");
+        $stmt->execute([$networkId, $channel, $message]);
+    }
+    public function nukeReleaseByName(string $name, string $reason, string $source = 'irc'): bool
+    {
+        $stmt = $this->pdo->prepare("SELECT id FROM releases WHERE name = ? LIMIT 1");
+        $stmt->execute([$name]);
+        $releaseId = $stmt->fetchColumn();
+
+        if (!$releaseId) {
+            return false;
+        }
+
+        $upd = $this->pdo->prepare("UPDATE releases SET status = 'nuked', nuke_reason = ?, updated_at = NOW() WHERE id = ?");
+        $upd->execute([$reason, $releaseId]);
+
+        $this->addEvent((int)$releaseId, 'nuke', $reason, $source);
+        return true;
+    }
 }

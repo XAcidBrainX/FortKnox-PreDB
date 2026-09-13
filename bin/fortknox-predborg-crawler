@@ -1,0 +1,125 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\Database\Connection;
+use FortKnox\Notifications\WebhookService;
+use FortKnox\PreDB\ImportService;
+use FortKnox\PreDB\ReleaseParser;
+use FortKnox\PreDB\ReleaseRepository;
+
+$envFile = dirname(__DIR__) . '/.env';
+if (!is_readable($envFile)) {
+    fwrite(STDERR, "Missing .env file.\n");
+    exit(1);
+}
+
+$env = parse_ini_file($envFile) ?: [];
+
+$connection = new Connection([
+    'host' => $env['DB_HOST'] ?? '127.0.0.1',
+    'port' => (int) ($env['DB_PORT'] ?? 3306),
+    'database' => $env['DB_DATABASE'] ?? '',
+    'username' => $env['DB_USERNAME'] ?? '',
+    'password' => $env['DB_PASSWORD'] ?? '',
+    'charset' => $env['DB_CHARSET'] ?? 'utf8mb4',
+]);
+
+$pdo = $connection->get();
+$repository = new ReleaseRepository($pdo);
+$parser = new ReleaseParser();
+$webhook = new WebhookService($env);
+$importService = new ImportService($parser, $repository, $webhook);
+
+$apiUrl = 'https://predb.org/api/data?page=1';
+
+$ctx = stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nAccept: application/json\r\nReferer: https://predb.org/\r\n",
+        'timeout' => 15,
+    ],
+]);
+
+$response = @file_get_contents($apiUrl, false, $ctx);
+if ($response === false) {
+    fwrite(STDERR, "[predb.org] Konnte API nicht abrufen.\n");
+    exit(1);
+}
+
+$data = json_decode($response, true);
+$rows = $data['values'] ?? [];
+
+if (!is_array($rows) || empty($rows)) {
+    echo "[predb.org] Keine Releases empfangen.\n";
+    exit(0);
+}
+
+$imported = 0;
+$skipped = 0;
+$nukedCount = 0;
+
+foreach ($rows as $item) {
+    $rlsName = trim((string) ($item['rlsname'] ?? ''));
+    if ($rlsName === '') {
+        continue;
+    }
+
+    $section = trim((string) ($item['section'] ?? ''));
+    $grp = trim((string) ($item['grp'] ?? ''));
+    $status = (int) ($item['status'] ?? 0); // 1 = nuked
+    $nukeReason = trim((string) ($item['nukereason'] ?? ''));
+
+    $existing = $repository->findByName($rlsName);
+
+    if ($existing === null) {
+        try {
+            $line = ($section !== '' ? "[{$section}] " : '') . $rlsName;
+            $importService->importFromAnnouncement($line, 'predb.org');
+            $imported++;
+
+            if ($status === 1) {
+                $newRls = $repository->findByName($rlsName);
+                if ($newRls) {
+                    $pdo->prepare('UPDATE releases SET nuke = 1 WHERE id = ?')->execute([$newRls['id']]);
+                    $repository->addEvent((int) $newRls['id'], 'nuke', $nukeReason ?: 'Nuked on predb.org', 'predb.org');
+                    $nukedCount++;
+                }
+            }
+        } catch (\Throwable) {
+            try {
+                $groupId = null;
+                if ($grp !== '') {
+                    $groupId = $repository->findOrCreateGroup($grp);
+                } elseif (preg_match('/-([A-Za-z0-9_]+)$/', $rlsName, $m)) {
+                    $groupId = $repository->findOrCreateGroup($m[1]);
+                }
+
+                $parsed = $parser->parse($rlsName);
+                $relId = $repository->createRelease($parsed, $groupId);
+                $repository->addEvent($relId, 'announce', "Section: {$section}", 'predb.org');
+
+                if ($status === 1) {
+                    $pdo->prepare('UPDATE releases SET nuke = 1 WHERE id = ?')->execute([$relId]);
+                    $repository->addEvent($relId, 'nuke', $nukeReason ?: 'Nuked on predb.org', 'predb.org');
+                    $nukedCount++;
+                }
+                $imported++;
+            } catch (\Throwable) {
+                $skipped++;
+            }
+        }
+    } else {
+        if ($status === 1 && (int) $existing['nuke'] === 0) {
+            $pdo->prepare('UPDATE releases SET nuke = 1 WHERE id = ?')->execute([$existing['id']]);
+            $repository->addEvent((int) $existing['id'], 'nuke', $nukeReason ?: 'Nuked on predb.org', 'predb.org');
+            $nukedCount++;
+        }
+        $skipped++;
+    }
+}
+
+echo "[predb.org] Sync fertig. Importiert: {$imported} | Übersprungen/Vorhanden: {$skipped} | Nukes synchronisiert: {$nukedCount}\n";

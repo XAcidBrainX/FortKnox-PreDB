@@ -1,0 +1,149 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\Database\Connection;
+use FortKnox\Notifications\WebhookService;
+use FortKnox\PreDB\ImportService;
+use FortKnox\PreDB\ReleaseParser;
+use FortKnox\PreDB\ReleaseRepository;
+
+$envFile = dirname(__DIR__) . '/.env';
+if (!is_readable($envFile)) {
+    fwrite(STDERR, "Missing .env file.\n");
+    exit(1);
+}
+
+$env = parse_ini_file($envFile) ?: [];
+
+$connection = new Connection([
+    'host' => $env['DB_HOST'] ?? '127.0.0.1',
+    'port' => (int) ($env['DB_PORT'] ?? 3306),
+    'database' => $env['DB_DATABASE'] ?? '',
+    'username' => $env['DB_USERNAME'] ?? '',
+    'password' => $env['DB_PASSWORD'] ?? '',
+    'charset' => $env['DB_CHARSET'] ?? 'utf8mb4',
+]);
+
+$pdo = $connection->get();
+$repository = new ReleaseRepository($pdo);
+$parser = new ReleaseParser();
+$webhook = new WebhookService($env);
+$importService = new ImportService($parser, $repository, null);
+
+$stmt = $pdo->query('
+    SELECT * FROM external_sources
+    WHERE enabled = 1
+      AND (last_sync IS NULL OR TIMESTAMPDIFF(MINUTE, last_sync, NOW()) >= sync_interval_min)
+');
+$sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+function fetchUrl(string $url, string $accept = '*/*'): ?string {
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) FortKnox/1.0\r\nAccept: {$accept}\r\n",
+            'timeout' => 12,
+            'ignore_errors' => true,
+        ],
+    ]);
+    $content = @file_get_contents($url, false, $ctx);
+    return $content !== false ? $content : null;
+}
+
+foreach ($sources as $source) {
+    $sourceId = (int) $source['id'];
+    $sourceName = $source['name'];
+    $url = $source['url'];
+    $type = $source['type'];
+
+    echo "Syncing [{$sourceName}] ({$type})...\n";
+    $imported = 0;
+    $statusMsg = 'OK';
+
+    try {
+        if ($type === 'predb_net') {
+            $json = fetchUrl($url, 'application/json');
+            $data = json_decode((string) $json, true);
+            $rows = $data['rows'] ?? $data['data'] ?? [];
+            foreach ($rows as $item) {
+                $rls = trim((string) ($item['name'] ?? $item['release'] ?? ''));
+                if ($rls === '' || $repository->findByName($rls)) continue;
+                try {
+                    $res = $importService->import($rls);
+                    if ($res !== null) { $imported++; usleep(350000); }
+                } catch (\Throwable $e) {
+                    echo "    [Error {$rls}: " . $e->getMessage() . "]\n";
+                }
+            }
+        } elseif ($type === 'predb_org') {
+            $json = fetchUrl($url, 'application/json');
+            $data = json_decode((string) $json, true);
+            $rows = $data['values'] ?? [];
+            foreach ($rows as $item) {
+                $rls = trim((string) ($item['rlsname'] ?? ''));
+                if ($rls === '' || $repository->findByName($rls)) continue;
+                try {
+                    $res = $importService->import($rls);
+                    if ($res !== null) { $imported++; usleep(350000); }
+                } catch (\Throwable $e) {
+                    echo "    [Error {$rls}: " . $e->getMessage() . "]\n";
+                }
+            }
+        } elseif ($type === 'rss') {
+            $raw = fetchUrl($url, 'application/rss+xml, application/xml, text/xml');
+            if ($raw) {
+                libxml_use_internal_errors(true);
+                $xml = simplexml_load_string($raw, 'SimpleXMLElement', LIBXML_NOCDATA);
+                if ($xml) {
+                    $items = $xml->channel->item ?? $xml->entry ?? [];
+                    foreach ($items as $item) {
+                        $title = trim((string) $item->title);
+                        if ($title === '') continue;
+                        $rls = $title;
+                        if (preg_match('/^\[([^\]]+)\]\s*(.+)$/', $title, $m)) {
+                            $rls = $m[2];
+                        }
+                        if ($repository->findByName($rls)) continue;
+                        try {
+                            $res = $importService->import($rls);
+                            if ($res !== null) { $imported++; usleep(350000); }
+                        } catch (\Throwable $e) {
+                            echo "    [Error {$rls}: " . $e->getMessage() . "]\n";
+                        }
+                    }
+                }
+            }
+        } elseif ($type === 'html_regex') {
+            $html = fetchUrl($url, 'text/html');
+            if ($html) {
+                if (preg_match_all('/[A-Za-z0-9._]+-(?:[A-Za-z0-9_]{2,15})/i', $html, $matches)) {
+                    $found = array_unique($matches[0]);
+                    foreach (array_slice($found, 0, 50) as $rls) {
+                        if (strlen($rls) < 8 || $repository->findByName($rls)) continue;
+                        try {
+                            $res = $importService->import($rls);
+                            if ($res !== null) { $imported++; usleep(350000); }
+                        } catch (\Throwable $e) {
+                            echo "    [Error {$rls}: " . $e->getMessage() . "]\n";
+                        }
+                    }
+                }
+            }
+        }
+
+        $statusMsg = "Imported: {$imported}";
+    } catch (\Throwable $e) {
+        $statusMsg = 'Error: ' . substr($e->getMessage(), 0, 100);
+    }
+
+    echo "  -> Imported: {$imported}\n";
+
+    $updateStmt = $pdo->prepare('UPDATE external_sources SET last_sync = NOW(), last_status = ? WHERE id = ?');
+    $updateStmt->execute([$statusMsg, $sourceId]);
+}
+
+echo "Crawler cycle completed.\n";

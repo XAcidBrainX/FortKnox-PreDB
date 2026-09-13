@@ -35,6 +35,17 @@ final class ImportService
         try {
             $releaseId = $this->repository->createRelease($parsed, $groupId);
             $this->repository->addEvent($releaseId, 'announce', 'Release announced via IRC', 'irc');
+
+            // IRC Announce Queue
+            try {
+                $sec = $parsed->category() ?: 'PRE';
+                $msg = chr(3) . "03[PRE]" . chr(3) . " " . chr(3) . "07[" . $sec . "]" . chr(3) . " " . chr(2) . $releaseName . chr(2);
+                $this->repository->queueIrcAnnounce(1, '#predb', $msg);
+            } catch (\Throwable $e) {
+                fwrite(STDERR, "[IRC Outbox Error] " . $e->getMessage() . "
+");
+            }
+
         } catch (\Throwable) {
             return null;
         }

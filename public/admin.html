@@ -168,7 +168,71 @@
         </table>
       </div>
 
-      <div class="card">
+            <div class="card">
+        <div class="flex" style="justify-content: space-between;">
+          <h2>🌐 Externe PreDB Quellen</h2>
+          <button id="newSourceBtn" class="primary">+ Neue Quelle hinzufügen</button>
+        </div>
+
+        <div id="sourceFormContainer" class="hidden" style="background: #0d1219; border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin: 16px 0;">
+          <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: var(--primary);" id="sourceFormTitle">Quelle konfigurieren</h3>
+          <form id="sourceForm">
+            <input type="hidden" id="sourceId">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Quellen Name</label>
+                <input type="text" id="sourceName" placeholder="z. B. predb.me, corrupt-net" required>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>URL / Feed / API Endpunkt</label>
+                <input type="url" id="sourceUrl" placeholder="https://..." required>
+              </div>
+              <div class="form-group">
+                <label>Parser Typ</label>
+                <select id="sourceType">
+                  <option value="predb_net">predb.net (JSON API)</option>
+                  <option value="predb_org">predb.org (Next.js Data API)</option>
+                  <option value="rss">RSS / XML Feed</option>
+                  <option value="html_regex">HTML Regex Scraper</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Sync Intervall (Minuten)</label>
+                <input type="number" id="sourceInterval" value="5" min="1" max="1440" required>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="sourceEnabled">
+                  <option value="1">Aktiviert</option>
+                  <option value="0">Deaktiviert</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex" style="margin-top: 14px; justify-content: flex-end;">
+              <button type="button" id="cancelSourceBtn">Abbrechen</button>
+              <button type="submit" class="primary">Speichern</button>
+            </div>
+          </form>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Typ</th>
+              <th>Intervall</th>
+              <th>Status</th>
+              <th>Letzter Sync</th>
+              <th style="text-align: right;">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="sourceTable">
+            <tr><td colspan="7" style="text-align: center; color: var(--muted);">Lade Quellen...</td></tr>
+          </tbody>
+        </table>
+      </div>
+<div class="card">
         <h2>Release Moderation</h2>
         <div class="flex" style="margin-bottom: 12px;">
           <input type="text" id="searchQuery" placeholder="Release suchen (z. B. Group, Name)..." style="flex: 1;">
@@ -205,6 +269,7 @@
         loadStats();
         loadBots();
         loadReleases();
+        loadSources();
       } else {
         document.getElementById('loginView').classList.remove('hidden');
         document.getElementById('adminView').classList.add('hidden');
@@ -417,6 +482,114 @@
     });
 
     checkAuth();
+  
+    let cachedSources = [];
+
+    async function loadSources() {
+      try {
+        const res = await fetch("/api/admin/sources");
+        if (!res.ok) return;
+        const data = await res.json();
+        const tbody = document.getElementById("sourceTable");
+        tbody.innerHTML = "";
+        cachedSources = data.sources || [];
+
+        if (!cachedSources.length) {
+          tbody.innerHTML = "<tr><td colspan=\"7\" style=\"text-align: center; color: var(--muted);\">Keine Quellen konfiguriert.</td></tr>";
+          return;
+        }
+
+        cachedSources.forEach(s => {
+          const tr = document.createElement("tr");
+          const isAct = parseInt(s.enabled, 10) === 1;
+          tr.innerHTML = `
+            <td>${s.id}</td>
+            <td><strong>${s.name}</strong><br><small style="color: var(--muted); word-break: break-all;">${s.url}</small></td>
+            <td><span class="tag" style="background:#1e293b;">${s.type}</span></td>
+            <td>${s.sync_interval_min}m</td>
+            <td>
+              <span class="tag ${isAct ? "tag-active" : "tag-inactive"}">${isAct ? "Aktiv" : "Inaktiv"}</span>
+            </td>
+            <td><small style="color: var(--muted);">${s.last_sync || "Nie"}<br>${s.last_status || ""}</small></td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button onclick="editSource(${s.id})">Edit</button>
+              <button class="${isAct ? "danger" : "success"}" onclick="toggleSource(${s.id}, ${isAct ? 0 : 1})">
+                ${isAct ? "Stop" : "Start"}
+              </button>
+              <button class="danger" onclick="deleteSource(${s.id})">×</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Fehler beim Laden der Quellen:", err);
+      }
+    }
+
+    function editSource(id) {
+      const s = cachedSources.find(x => parseInt(x.id, 10) === parseInt(id, 10));
+      if (!s) return;
+      document.getElementById("sourceId").value = s.id;
+      document.getElementById("sourceName").value = s.name;
+      document.getElementById("sourceUrl").value = s.url;
+      document.getElementById("sourceType").value = s.type;
+      document.getElementById("sourceInterval").value = s.sync_interval_min;
+      document.getElementById("sourceEnabled").value = s.enabled;
+      document.getElementById("sourceFormTitle").textContent = `Quelle #${s.id} bearbeiten`;
+      document.getElementById("sourceFormContainer").classList.remove("hidden");
+    }
+
+    async function toggleSource(id, enabled) {
+      await fetch(`/api/admin/sources/${id}/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled })
+      });
+      loadSources();
+    }
+
+    async function deleteSource(id) {
+      if (!confirm(`Quelle #${id} wirklich löschen?`)) return;
+      await fetch(`/api/admin/sources/${id}/delete`, { method: "POST" });
+      loadSources();
+    }
+
+    document.getElementById("newSourceBtn").addEventListener("click", () => {
+      document.getElementById("sourceForm").reset();
+      document.getElementById("sourceId").value = "";
+      document.getElementById("sourceFormTitle").textContent = "Neue Quelle hinzufügen";
+      document.getElementById("sourceFormContainer").classList.toggle("hidden");
+    });
+
+    document.getElementById("cancelSourceBtn").addEventListener("click", () => {
+      document.getElementById("sourceFormContainer").classList.add("hidden");
+    });
+
+    document.getElementById("sourceForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        id: document.getElementById("sourceId").value || null,
+        name: document.getElementById("sourceName").value,
+        url: document.getElementById("sourceUrl").value,
+        type: document.getElementById("sourceType").value,
+        sync_interval_min: parseInt(document.getElementById("sourceInterval").value, 10),
+        enabled: parseInt(document.getElementById("sourceEnabled").value, 10)
+      };
+
+      const res = await fetch("/api/admin/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        document.getElementById("sourceFormContainer").classList.add("hidden");
+        loadSources();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Fehler beim Speichern der Quelle.");
+      }
+    });
   </script>
 </body>
 </html>

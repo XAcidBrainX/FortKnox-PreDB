@@ -93,6 +93,7 @@ final class IrcSession
             }
 
             if ($line === '') {
+                $this->processOutbox();
                 $this->dispatchSignals();
                 continue;
             }
@@ -129,6 +130,51 @@ final class IrcSession
 
     private function handleLine(string $line): void
     {
+        // Auto-Nuke Channel Parser
+        if (preg_match('/^:(\S+?)!\S+\s+PRIVMSG\s+(#\S+)\s+:(.+)$/i', $line, $m)) {
+            $sender = $m[1];
+            $channel = strtolower($m[2]);
+            $text = $m[3];
+
+            // Eigene Nachrichten ignorieren
+            if ($sender !== $this->nickname && $channel === '#predb') {
+                // IRC Farbcodes/Steuerzeichen entfernen
+                $clean = preg_replace('/[(?:\d{1,2}(?:,\d{1,2})?)?]/', '', $text);
+
+                // Format: [NUKE] » » » [ RELEASE ] - [REASON]
+                if (preg_match('/\[NUKE\]\s*(?:[^\w\[]+)?\s*\[\s*([A-Za-z0-9._-]+)\s*\]\s*-\s*\[\s*([^\]]+)\s*\]/i', $clean, $hit)) {
+                    $nukedRelease = trim($hit[1]);
+                    $reason = trim($hit[2]);
+                    echo "[AUTO-NUKE] Erkannt: Release={$nukedRelease}, Grund={$reason} (von {$sender})\n";
+
+                    try {
+                        $env = parse_ini_file(dirname(__DIR__, 2) . '/.env') ?: [];
+                        $pdo = new \PDO('mysql:host=' . ($env['DB_HOST'] ?? '127.0.0.1') . ';port=' . ($env['DB_PORT'] ?? 3306) . ';dbname=' . ($env['DB_DATABASE'] ?? 'fortknox') . ';charset=utf8mb4', $env['DB_USERNAME'] ?? 'root', $env['DB_PASSWORD'] ?? '');
+                        $repo = new \FortKnox\PreDB\ReleaseRepository($pdo);
+                        $done = $repo->nukeReleaseByName($nukedRelease, $reason, $sender);
+                        if ($done) {
+                            echo "[AUTO-NUKE] Release {$nukedRelease} erfolgreich auf NUKED gesetzt.\n";
+                        } else {
+                            echo "[AUTO-NUKE] Release {$nukedRelease} nicht in lokaler DB gefunden.\n";
+                        }
+                    } catch (\Throwable $e) {
+                        echo "[AUTO-NUKE Fehler] " . $e->getMessage() . "\n";
+                    }
+                }
+            }
+        }
+
+        // Nickname Collision Handling (433)
+        if (preg_match('/ 433 \* /i', $line)) {
+            echo "[IRC] Nickname collision detected, trying alternative nick...\n";
+            if ($this->password !== null && $this->password !== '') {
+                $this->client->send("PRIVMSG NickServ :GHOST " . $this->nickname . " " . $this->password);
+                sleep(1);
+            }
+            $this->client->send("NICK " . $this->nickname . "_");
+            return;
+        }
+
         echo '< ' . $line . PHP_EOL;
 
         /*
@@ -342,5 +388,26 @@ final class IrcSession
             '\s/',
             $line
         ) === 1;
+    }
+    private function processOutbox(): void
+    {
+        static $pdo = null;
+        if ($pdo === null) {
+            try {
+                $env = parse_ini_file(dirname(__DIR__, 2) . '/.env') ?: [];
+                $pdo = new \PDO('mysql:host=' . ($env['DB_HOST'] ?? '127.0.0.1') . ';port=' . ($env['DB_PORT'] ?? 3306) . ';dbname=' . ($env['DB_DATABASE'] ?? 'fortknox') . ';charset=utf8mb4', $env['DB_USERNAME'] ?? 'root', $env['DB_PASSWORD'] ?? '');
+            } catch (\Throwable) { return; }
+        }
+
+        try {
+            $stmt = $pdo->query("SELECT id, channel, message FROM irc_outbox WHERE status = 'pending' ORDER BY id ASC LIMIT 5");
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                $this->client->send("PRIVMSG " . $row['channel'] . " :" . $row['message']);
+                $upd = $pdo->prepare("UPDATE irc_outbox SET status = 'sent', sent_at = NOW() WHERE id = ?");
+                $upd->execute([$row['id']]);
+                usleep(250000); // 250ms Flood-Protection
+            }
+        } catch (\Throwable) {}
     }
 }

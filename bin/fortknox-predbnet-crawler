@@ -1,0 +1,119 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+use FortKnox\Database\Connection;
+use FortKnox\Notifications\WebhookService;
+use FortKnox\PreDB\ImportService;
+use FortKnox\PreDB\ReleaseParser;
+use FortKnox\PreDB\ReleaseRepository;
+
+$envFile = dirname(__DIR__) . '/.env';
+if (!is_readable($envFile)) {
+    fwrite(STDERR, "Missing .env file.\n");
+    exit(1);
+}
+
+$env = parse_ini_file($envFile) ?: [];
+
+$connection = new Connection([
+    'host' => $env['DB_HOST'] ?? '127.0.0.1',
+    'port' => (int) ($env['DB_PORT'] ?? 3306),
+    'database' => $env['DB_DATABASE'] ?? '',
+    'username' => $env['DB_USERNAME'] ?? '',
+    'password' => $env['DB_PASSWORD'] ?? '',
+    'charset' => $env['DB_CHARSET'] ?? 'utf8mb4',
+]);
+
+$pdo = $connection->get();
+$repository = new ReleaseRepository($pdo);
+$parser = new ReleaseParser();
+$webhook = new WebhookService($env);
+$importService = new ImportService($parser, $repository, $webhook);
+
+$apiUrl = 'https://api.predb.net/?type=search&limit=100';
+
+$ctx = stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => "User-Agent: FortKnox-PreDB-Sync/1.0\r\nAccept: application/json\r\n",
+        'timeout' => 15,
+    ],
+]);
+
+$response = @file_get_contents($apiUrl, false, $ctx);
+if ($response === false) {
+    fwrite(STDERR, "[predb.net] Failed to fetch data from API.\n");
+    exit(1);
+}
+
+$data = json_decode($response, true);
+$rows = $data['rows'] ?? $data['data'] ?? (is_array($data) ? $data : []);
+
+if (!is_array($rows) || empty($rows)) {
+    echo "[predb.net] No releases received.\n";
+    exit(0);
+}
+
+$imported = 0;
+$skipped = 0;
+$nukedCount = 0;
+
+foreach ($rows as $item) {
+    $rlsName = trim((string) ($item['name'] ?? $item['release'] ?? ''));
+    if ($rlsName === '') {
+        continue;
+    }
+
+    $section = trim((string) ($item['section'] ?? $item['cat'] ?? ''));
+    $status = (int) ($item['status'] ?? 0); // 1 = nuked
+    $nukeReason = trim((string) ($item['nukereason'] ?? $item['reason'] ?? ''));
+
+    $existing = $repository->findByName($rlsName);
+
+    if ($existing === null) {
+        try {
+            $line = ($section !== '' ? "[{$section}] " : '') . $rlsName;
+            $importService->importFromAnnouncement($line, 'predb.net');
+            $imported++;
+
+            if ($status === 1) {
+                $newRls = $repository->findByName($rlsName);
+                if ($newRls) {
+                    $pdo->prepare('UPDATE releases SET nuke = 1 WHERE id = ?')->execute([$newRls['id']]);
+                    $repository->addEvent((int) $newRls['id'], 'nuke', $nukeReason ?: 'Nuked on predb.net', 'predb.net');
+                    $nukedCount++;
+                }
+            }
+        } catch (\Throwable) {
+            try {
+                $groupId = null;
+                if (preg_match('/-([A-Za-z0-9_]+)$/', $rlsName, $m)) {
+                    $groupId = $repository->findOrCreateGroup($m[1]);
+                }
+                $parsed = $parser->parse($rlsName);
+                $relId = $repository->createRelease($parsed, $groupId);
+                $repository->addEvent($relId, 'announce', "Section: {$section}", 'predb.net');
+                if ($status === 1) {
+                    $pdo->prepare('UPDATE releases SET nuke = 1 WHERE id = ?')->execute([$relId]);
+                    $repository->addEvent($relId, 'nuke', $nukeReason ?: 'Nuked on predb.net', 'predb.net');
+                }
+                $imported++;
+            } catch (\Throwable) {
+                $skipped++;
+            }
+        }
+    } else {
+        if ($status === 1 && (int) $existing['nuke'] === 0) {
+            $pdo->prepare('UPDATE releases SET nuke = 1 WHERE id = ?')->execute([$existing['id']]);
+            $repository->addEvent((int) $existing['id'], 'nuke', $nukeReason ?: 'Nuked on predb.net', 'predb.net');
+            $nukedCount++;
+        }
+        $skipped++;
+    }
+}
+
+echo "[predb.net] Sync finished. Imported: {$imported} | Skipped/Existing: {$skipped} | Nukes synced: {$nukedCount}\n";

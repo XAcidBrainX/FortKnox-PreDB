@@ -9,6 +9,7 @@ use RuntimeException;
 final class IrcSession
 {
     private bool $running = false;
+    private bool $identified = false;
 
     public function __construct(
         private readonly IrcClient $client,
@@ -65,6 +66,7 @@ final class IrcSession
     private function runConnection(): void
     {
         echo '[IRC] Connecting...' . PHP_EOL;
+        $this->identified = false;
 
         $this->client->connect();
 

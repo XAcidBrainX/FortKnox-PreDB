@@ -21,32 +21,30 @@ final class DashboardController
         try {
             $pdo = $this->connection->get();
 
-            $releases = (int) $pdo
-                ->query('SELECT COUNT(*) FROM releases')
-                ->fetchColumn();
+            // Vorgefertigte Stats (Cron: fortknox-refresh-stats) – kein Live-COUNT
+            $statsRow = $pdo->query('SELECT * FROM dashboard_stats WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+            if (!$statsRow) {
+                $statsRow = [
+                    'total_releases'  => 0,
+                    'total_groups'    => 0,
+                    'total_events'    => 0,
+                    'total_nuked'     => 0,
+                    'categories_json' => '[]',
+                ];
+            }
 
-            $groups = (int) $pdo
-                ->query('SELECT COUNT(*) FROM release_groups')
-                ->fetchColumn();
+            $releases = (int) $statsRow['total_releases'];
+            $groups   = (int) $statsRow['total_groups'];
+            $events   = (int) $statsRow['total_events'];
+            $nuked    = (int) $statsRow['total_nuked'];
 
-            $events = (int) $pdo
-                ->query('SELECT COUNT(*) FROM release_events')
-                ->fetchColumn();
-
-            $nuked = (int) $pdo
-                ->query('SELECT COUNT(*) FROM releases WHERE nuke = 1')
-                ->fetchColumn();
-
-            $categoryStatement = $pdo->query(
-                'SELECT
-                    COALESCE(category, \'UNKNOWN\') AS category,
-                    COUNT(*) AS count
-                 FROM releases
-                 GROUP BY category
-                 ORDER BY count DESC, category ASC'
-            );
-
-            $categories = $categoryStatement->fetchAll();
+            $categories = json_decode($statsRow['categories_json'] ?? '[]', true) ?: [];
+            $categories = array_map(static function (array $c): array {
+                return [
+                    'category' => $c['category'] ?? 'UNKNOWN',
+                    'count'    => (int) ($c['count'] ?? $c['cnt'] ?? 0),
+                ];
+            }, $categories);
 
             $recentStatement = $pdo->query(
                 'SELECT

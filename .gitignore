@@ -11,3 +11,4 @@
 /storage/backups/*
 database.sqlite
 backups/
+.env

@@ -168,11 +168,7 @@ final class IrcSession
 
         // Nickname Collision Handling (433)
         if (preg_match('/ 433 \* /i', $line)) {
-            echo "[IRC] Nickname collision detected, trying alternative nick...\n";
-            if ($this->password !== null && $this->password !== '') {
-                $this->client->send("PRIVMSG NickServ :GHOST " . $this->nickname . " " . $this->password);
-                sleep(1);
-            }
+            echo "[IRC] Nickname collision detected - taking alt nick for registration.\n";
             $this->client->send("NICK " . $this->nickname . "_");
             return;
         }
@@ -198,9 +194,20 @@ final class IrcSession
          * Registration completed.
          */
         if ($this->isNumeric($line, '001')) {
-            $this->authenticateNickServ();
+            echo "[IRC] 001 Welcome received. Reclaiming nick and identifying.\n";
+            $nsPass = $this->nickServPassword ?: $this->password;
+            if ($nsPass !== null && $nsPass !== '') {
+                $service = $this->nickServService ?: 'NickServ';
+                $this->client->send("PRIVMSG {$service} :RECOVER " . $this->nickname . " " . $nsPass);
+                sleep(2);
+                $this->client->send("NICK " . $this->nickname);
+                sleep(1);
+                $this->client->send("PRIVMSG {$service} :IDENTIFY " . $nsPass);
+                sleep(1);
+            } else {
+                $this->authenticateNickServ();
+            }
             $this->joinChannels();
-
             return;
         }
 

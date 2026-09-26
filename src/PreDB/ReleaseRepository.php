@@ -228,4 +228,33 @@ final class ReleaseRepository
         $this->addEvent((int)$releaseId, 'nuke', $reason, $source);
         return true;
     }
+
+
+    private function parseReleaseTags(string $rlsName): string {$tags = [
+            'group' => null,
+            'resolution' => null,
+            'source' => null,
+            'codec' => null,
+            'year' => null
+        ];
+
+        if (strpos($rlsName, '-') !== false) {
+            $parts = explode('-',$rlsName);
+            $tags['group'] = array_pop($parts);
+        }
+
+        $patterns = [
+            'resolution' => '/(2160p|1080p|1080i|720p|480p)/i',
+            'source'     => '/(BluRay|WEB-?DL|WEBRip|HDTV|PDTV|DVDRip|BDRip|UHD)/i',
+            'codec'      => '/(x264|x265|H\.?264|H\.?265|XviD)/i',
+            'year'       => '/\.((?:19|20)\d{2})\./'
+        ];
+
+        foreach ($patterns as $key =>$pattern) {
+            if (preg_match($pattern,$rlsName, $matches)) {$tags[$key] = strtoupper($matches[1]);
+            }
+        }
+        return json_encode($tags);
+    }
+
 }

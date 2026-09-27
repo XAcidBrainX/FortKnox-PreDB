@@ -8,6 +8,7 @@ use FortKnox\Database\Connection;
 use FortKnox\Web\Controller\AuthController;
 use FortKnox\Web\Controller\DashboardController;
 use FortKnox\Web\Controller\ReleaseController;
+use FortKnox\Web\Controller\BackupController;
 use FortKnox\Web\Router;
 
 $envFile = dirname(__DIR__) . '/.env';
@@ -36,6 +37,7 @@ $connection = new Connection([
 ]);
 
 $releaseController = new ReleaseController($connection);
+$backupController = new BackupController($connection, $env);
 $dashboardController = new DashboardController($connection);
 $authController = new AuthController(
     (string) ($env['ADMIN_USER'] ?? 'admin'),
@@ -46,18 +48,18 @@ $authController = new AuthController(
 $router = new Router();
 
 // Public Read-APIs
-$router->get('/api/releases', [$releaseController, 'index']);
+$router->get('/api/releases', fn() => $releaseController->index());
 $router->get('/api/releases/search', fn () => $releaseController->search($_GET));
 $router->get('/api/releases/live', fn () => $releaseController->live($_GET));
 $router->get('/api/releases/{id}', fn (string $id) => $releaseController->show((int) $id));
 $router->get('/api/releases/{id}/events', fn (string $id) => $releaseController->events((int) $id));
-$router->get('/api/dashboard', [$dashboardController, 'index']);
+$router->get('/api/dashboard', fn() => $dashboardController->index());
 
 // Auth APIs
-$router->post('/api/auth/login', [$authController, 'login']);
-$router->post('/api/auth/logout', [$authController, 'logout']);
-$router->get('/api/auth/status', [$authController, 'status']);
-$router->get('/api/admin/stats', [$authController, 'stats']);
+$router->post('/api/auth/login', fn() => $authController->login());
+$router->post('/api/auth/logout', fn() => $authController->logout());
+$router->get('/api/auth/status', fn() => $authController->status());
+$router->get('/api/admin/stats', fn() => $authController->stats());
 
 // Admin Protected Actions
 $requireAuth = function (callable $action) {
@@ -73,8 +75,8 @@ $requireAuth = function (callable $action) {
 };
 
 // Bot Management APIs
-$router->get('/api/admin/bots', $requireAuth([$authController, 'listBots']));
-$router->post('/api/admin/bots', $requireAuth([$authController, 'saveBot']));
+$router->get('/api/admin/bots', $requireAuth(fn() => $authController->listBots()));
+$router->post('/api/admin/bots', $requireAuth(fn() => $authController->saveBot()));
 $router->post('/api/admin/bots/{id}/start', $requireAuth(fn (string $id) => $authController->toggleBotService((int) $id, 'start')));
 $router->post('/api/admin/bots/{id}/stop', $requireAuth(fn (string $id) => $authController->toggleBotService((int) $id, 'stop')));
 $router->post('/api/admin/bots/{id}/restart', $requireAuth(fn (string $id) => $authController->toggleBotService((int) $id, 'restart')));
@@ -84,7 +86,7 @@ $router->get('/api/admin/sources', $requireAuth(function () use ($connection) {
     header('Content-Type: application/json');
     $pdo = $connection->get();
     $stmt = $pdo->query('SELECT * FROM external_sources ORDER BY id ASC');
-    echo json_encode(['success' => true, 'sources' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    echo json_encode(['success' => true, 'sources' => $stmt->fetchAll(\PDO::FETCH_ASSOC)]);
 }));
 
 $router->post('/api/admin/sources', $requireAuth(function () use ($connection) {
@@ -136,7 +138,26 @@ $router->post('/api/releases/{id}/nuke', $requireAuth(fn (string $id) => $releas
 $router->post('/api/releases/{id}/unnuke', $requireAuth(fn (string $id) => $releaseController->unnuke((int) $id)));
 $router->post('/api/releases/{id}/dupe', $requireAuth(fn (string $id) => $releaseController->dupe((int) $id)));
 
+
+// Admin Backups & Users API Routes
+$router->get('/api/admin/backups', $requireAuth(fn() => $backupController->listBackups()));
+$router->post('/api/admin/backups', $requireAuth(fn() => $backupController->create()));
+$router->post('/api/admin/backups/{filename}/restore', $requireAuth(fn (string $filename) => $backupController->restore($filename)));
+$router->post('/api/admin/backups/{filename}/delete', $requireAuth(fn (string $filename) => $backupController->delete($filename)));
+
+$router->get('/api/admin/users', $requireAuth(function () use ($connection) {
+    header('Content-Type: application/json');
+    $pdo = $connection->get();
+    $stmt = $pdo->query('SELECT id, username, role, is_active, last_login, created_at FROM admin_users ORDER BY id ASC');
+    echo json_encode(['success' => true, 'users' => $stmt->fetchAll(\PDO::FETCH_ASSOC)]);
+}));
+
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
-$router->dispatch($method, $path ?: '/');
+try {
+    $router->dispatch($method, $path ?: '/');
+} catch (\Throwable $e) {
+    file_put_contents("/tmp/php-crash.log", "[ERROR] " . $e->getMessage() . " in " . $e->getFile() . " Zeile " . $e->getLine() . "\n", FILE_APPEND);
+    http_response_code(500);
+}

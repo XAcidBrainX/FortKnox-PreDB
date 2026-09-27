@@ -48,6 +48,82 @@
     .form-group { display: flex; flex-direction: column; gap: 4px; }
     .form-group label { font-size: 0.75rem; color: var(--muted); }
   </style>
+
+<style id="custom-tab-styles">
+  .nav-tabs-bar {
+    display: flex;
+    gap: 8px;
+    margin: 20px 0 16px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 8px 16px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+  .tab-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+  }
+  .tab-btn.active {
+    background: #0284c7;
+    color: #ffffff;
+  }
+  .view-panel {
+    display: none;
+  }
+  .view-panel.active {
+    display: block;
+  }
+</style>
+
+
+<style id="fk-tab-system">
+  .nav-tabs-bar {
+    display: flex;
+    gap: 8px;
+    margin: 18px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+  }
+  .tab-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+  }
+  .tab-btn:hover {
+    background: #334155;
+    color: #f8fafc;
+  }
+  .tab-btn.active {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: #ffffff;
+  }
+  .admin-panel {
+    display: none !important;
+  }
+  .admin-panel.active {
+    display: block !important;
+  }
+</style>
+
 </head>
 <body>
   <div class="container">
@@ -98,7 +174,17 @@
 
       <div class="card">
         <div class="flex" style="justify-content: space-between;">
-          <h2>IRC Bots & Netzwerke</h2>
+          <h2>
+  <!-- REITER NAVIGATION -->
+  <div class="nav-tabs-bar">
+    <button class="tab-btn active" onclick="switchView('bots', this)">🤖 IRC Bots</button>
+    <button class="tab-btn" onclick="switchView('sources', this)">🌐 Externe Quellen</button>
+    <button class="tab-btn" onclick="switchView('moderation', this)">🛡️ Release Moderation</button>
+    <button class="tab-btn" onclick="switchView('users', this)">👥 Benutzerverwaltung</button>
+    <button class="tab-btn" onclick="switchView('backups', this)">💾 Backups</button>
+  </div>
+
+<div id="panel-bots" class="view-panel active"><div class="card-bots-inner">IRC Bots & Netzwerke</h2>
           <button id="newBotBtn" class="primary">+ Neues Netzwerk hinzufügen</button>
         </div>
 
@@ -138,9 +224,17 @@
                 <label>Server Passwort / NickServ (optional)</label>
                 <input type="password" id="botPass" placeholder="Leer lassen falls unverändert">
               </div>
-              <div class="form-group">
-                <label>Channels (kommagetrennt)</label>
-                <input type="text" id="botChannels" value="#predb" required>
+              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; gap: 10px; margin: 8px 0;">
+                <input type="checkbox" id="botAnnounce" value="1" checked style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="botAnnounce" style="cursor: pointer; margin: 0; font-weight: normal;">
+                  <strong>Releases announcen (Discord / Webhooks)</strong>
+                  <span style="display: block; font-size: 0.78rem; color: var(--muted);">Wenn deaktiviert, sammelt dieser Bot Releases lautlos nur in die Datenbank (Collector-Mode).</span>
+                </label>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Überwachte Channels (einer pro Zeile oder kommagetrennt, z. B. #predb, #releases key)</label>
+                <textarea id="botChannels" rows="3" style="width: 100%; font-family: monospace; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 8px;" placeholder="#predb&#10;#pre-mp3&#10;#pre-tv secretkey" required></textarea>
+                <small style="color: var(--muted); font-size: 0.8rem; display: block; margin-top: 4px;">Format: Ein Channel pro Zeile oder mit Komma getrennt. Optional mit Sektions-Zuweisung: <code>#pre-mp3:MP3</code>, <code>#predb-tv:TV</code>.</small>
               </div>
             </div>
             <div class="flex" style="margin-top: 16px; justify-content: flex-end;">
@@ -170,7 +264,8 @@
 
             <div class="card">
         <div class="flex" style="justify-content: space-between;">
-          <h2>🌐 Externe PreDB Quellen</h2>
+          <h2>🌐 </div></div>
+<div id="panel-sources" class="view-panel"><div class="card-sources-inner">Externe PreDB Quellen</h2>
           <button id="newSourceBtn" class="primary">+ Neue Quelle hinzufügen</button>
         </div>
 
@@ -233,11 +328,13 @@
         </table>
       </div>
 <div class="card">
-        <h2>Release Moderation</h2>
+        <h2></div></div>
+<div id="panel-moderation" class="view-panel"><div class="card-mod-inner">Release Moderation</h2>
         <div class="flex" style="margin-bottom: 12px;">
           <input type="text" id="searchQuery" placeholder="Release suchen (z. B. Group, Name)..." style="flex: 1;">
           <button id="searchBtn">Suchen</button>
         </div>
+    
         <table>
           <thead>
             <tr>
@@ -591,5 +688,511 @@
       }
     });
   </script>
-</body>
+
+<!-- MODAL: BOT LOGS -->
+<div id="botLogsModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+  <div style="background: #0d1219; border: 1px solid var(--border); border-radius: 8px; width: 90%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+    <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #080c10;">
+      <h3 style="margin: 0; font-size: 1rem; color: var(--primary);" id="logModalTitle">Bot Logs</h3>
+      <div style="display: flex; gap: 8px;">
+        <button id="refreshLogsBtn" class="action-btn" style="background:#1e293b; border-color:#334155;">Aktualisieren</button>
+        <button onclick="closeBotLogs()" class="action-btn" style="background:#dc2626; border-color:#ef4444; color:#fff;">Schließen</button>
+      </div>
+    </div>
+    <pre id="botLogsContent" style="margin: 0; padding: 14px; background: #05070a; color: #a5b4fc; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; line-height: 1.45; overflow-y: auto; flex: 1; white-space: pre-wrap; word-break: break-all;">Lade Logs...</pre>
+  </div>
+</div>
+    
+
+
+<script>
+let currentLogBotId = null;
+
+async function showBotLogs(botId, botName) {
+  currentLogBotId = botId;
+  const modal = document.getElementById("botLogsModal");
+  const title = document.getElementById("logModalTitle");
+  const pre = document.getElementById("botLogsContent");
+
+  title.innerText = `Live-Logs: [ID ${botId}] ${botName || "IRC Bot"}`;
+  pre.innerText = "Lade journalctl Logs...";
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
+
+  await fetchLogs(botId);
+}
+
+async function fetchLogs(botId) {
+  const pre = document.getElementById("botLogsContent");
+  try {
+    const res = await fetch(`/api/admin/bots/${botId}/logs`);
+    const data = await res.json();
+    if (data.logs) {
+      pre.innerText = data.logs;
+      pre.scrollTop = pre.scrollHeight;
+    } else {
+      pre.innerText = data.error || "Keine Logs empfangen.";
+    }
+  } catch (err) {
+    pre.innerText = "Verbindungsfehler beim Abrufen der Logs: " + err.message;
+  }
+}
+
+function closeBotLogs() {
+  const modal = document.getElementById("botLogsModal");
+  modal.classList.add("hidden");
+  modal.style.display = "none";
+  currentLogBotId = null;
+}
+
+document.getElementById("refreshLogsBtn")?.addEventListener("click", () => {
+  if (currentLogBotId) fetchLogs(currentLogBotId);
+});
+</script>
+
+<script>
+
+
+async function loadUsers() {
+  const tbody = document.getElementById("usersTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#64748b;">Lade Benutzer...</td></tr>';
+  
+  try {
+    const res = await fetch("/api/admin/users", {
+      credentials: "same-origin",
+      headers: { "Accept": "application/json" }
+    });
+
+    if (res.status === 401) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#f87171;">Nicht autorisiert (Sitzung abgelaufen). Bitte neu anmelden.</td></tr>';
+      return;
+    }
+
+    if (!res.ok) {
+      const txt = await res.text();
+      tbody.innerHTML = `<tr><td colspan="6" style="padding:15px; text-align:center; color:#f87171;">HTTP ${res.status}: ${escapeHtml(txt.substring(0, 80))}</td></tr>`;
+      return;
+    }
+
+    const data = await res.json();
+    const users = data.users || [];
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#64748b;">Keine Benutzer in der Datenbank vorhanden.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map(u => `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size:0.9rem;">
+        <td style="padding:10px; color:#64748b;">#${u.id}</td>
+        <td style="padding:10px;"><strong style="color:#f8fafc;">${escapeHtml(u.username)}</strong></td>
+        <td style="padding:10px;"><span style="padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600; background:${u.role==='admin'?'rgba(2,132,199,0.2)':'rgba(100,116,139,0.2)'}; color:${u.role==='admin'?'#38bdf8':'#94a3b8'}; border:1px solid ${u.role==='admin'?'rgba(2,132,199,0.3)':'rgba(100,116,139,0.3)'};">${u.role.toUpperCase()}</span></td>
+        <td style="padding:10px;"><span style="color:${u.is_active == 1 ? '#4ade80' : '#f87171'}; font-size:0.8rem; font-weight:600;">${u.is_active == 1 ? 'ACTIVE' : 'INACTIVE'}</span></td>
+        <td style="padding:10px; color:#94a3b8; font-size:0.8rem;">${u.last_login || '-'}</td>
+        <td style="padding:10px; text-align:right;">
+          <button style="background:#334155; border:none; color:#f8fafc; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.8rem; margin-right:4px;" onclick='editUser(${JSON.stringify(u)})'>Edit</button>
+          <button style="background:${u.is_active == 1 ? '#eab308' : '#16a34a'}; border:none; color:#fff; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.8rem; margin-right:4px;" onclick="toggleUser(${u.id})">${u.is_active == 1 ? 'Sperren' : 'Aktivieren'}</button>
+          <button style="background:#dc2626; border:none; color:#fff; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.8rem;" onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')">X</button>
+        </td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:15px; text-align:center; color:#f87171;">Netzwerkfehler: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+
+function editUser(u) {
+  document.getElementById("userFormContainer").classList.remove("hidden");
+  document.getElementById("userFormTitle").innerText = "Benutzer bearbeiten: " + u.username;
+  document.getElementById("userId").value = u.id;
+  document.getElementById("userName").value = u.username;
+  document.getElementById("userPass").value = "";
+  document.getElementById("userPass").placeholder = "Leer lassen für unverändert";
+  document.getElementById("userRole").value = u.role;
+  document.getElementById("userActive").checked = (u.is_active == 1);
+}
+
+async function toggleUser(id) {
+  await fetch(`/api/admin/users/${id}/toggle`, { method: "POST" });
+  loadUsers();
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Benutzer "${name}" wirklich löschen?`)) return;
+  const res = await fetch(`/api/admin/users/${id}/delete`, { method: "POST" });
+  const data = await res.json();
+  if (data.error) alert(data.error);
+  loadUsers();
+}
+
+document.getElementById("newUserBtn")?.addEventListener("click", () => {
+  document.getElementById("userFormContainer").classList.remove("hidden");
+  document.getElementById("userFormTitle").innerText = "Neuen Benutzer anlegen";
+  document.getElementById("userId").value = "";
+  document.getElementById("userForm").reset();
+  document.getElementById("userPass").placeholder = "Passwort eingeben";
+});
+
+document.getElementById("cancelUserBtn")?.addEventListener("click", () => {
+  document.getElementById("userFormContainer").classList.add("hidden");
+});
+
+document.getElementById("userForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    id: document.getElementById("userId").value || null,
+    username: document.getElementById("userName").value.trim(),
+    password: document.getElementById("userPass").value,
+    role: document.getElementById("userRole").value,
+    is_active: document.getElementById("userActive").checked ? 1 : 0
+  };
+
+  const res = await fetch("/api/admin/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById("userFormContainer").classList.add("hidden");
+    loadUsers();
+  } else {
+    alert(data.error || "Fehler beim Speichern");
+  }
+});
+
+document.querySelector('[data-tab="users"]')?.addEventListener("click", () => {
+  loadUsers();
+});
+
+</script>
+
+  </div></div> <!-- Ende Panel Moderation -->
+
+  <!-- PANEL: BENUTZERVERWALTUNG -->
+  
+
+<script>
+
+
+function switchView(tabKey, btn) {
+  const panels = ['bots', 'sources', 'moderation', 'users', 'backups'];
+  panels.forEach(k => {
+    const el = document.getElementById('panel-' + k);
+    if (el) {
+      el.style.display = (k === tabKey) ? 'block' : 'none';
+      el.classList.toggle('active', k === tabKey);
+    }
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  if (tabKey === 'users') {
+    fetchUsersList();
+  } else if (tabKey === 'backups') {
+    fetchBackupsList();
+  }
+}
+
+
+</script>
+
+
+  <!-- PANEL: BACKUPS -->
+  <div id="panel-backups" class="admin-panel">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+          <h2 style="margin: 0; font-size: 1.15rem; color:#f8fafc;">💾 Backup & Wiederherstellung</h2>
+          <p style="margin:4px 0 0 0; color:#94a3b8; font-size:0.85rem;">Sichere Systemeinstellungen, Accounts oder erstelle komplette Datenbank-Dumps.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button id="btnConfigBackup" class="primary" style="background:#0284c7; border:none; padding:8px 14px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">⚡ System & Config Backup (Schnell)</button>
+          <button id="btnFullBackup" class="primary" style="background:#059669; border:none; padding:8px 14px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">📦 Vollständiger DB-Dump (Hintergrund)</button>
+        </div>
+      </div>
+
+      <div id="backupAlert" class="hidden" style="padding:12px; margin-bottom:16px; border-radius:6px; font-size:0.85rem;"></div>
+
+      <div class="table-responsive">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; color:#94a3b8; border-bottom:1px solid #1e293b; font-size:0.85rem;">
+              <th style="padding:10px;">Dateiname</th>
+              <th style="padding:10px;">Dateigröße</th>
+              <th style="padding:10px;">Erstellt am</th>
+              <th style="padding:10px; text-align:right;">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="backupsTableBody">
+            <tr><td colspan="4" style="padding:15px; text-align:center; color:#64748b;">Lade Backups...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div> <!-- Ende vorheriges Panel -->
+
+<!-- PANEL: BENUTZER -->
+<div id="panel-users" class="admin-panel">
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h2 style="margin: 0; font-size: 1.15rem; color:#f8fafc;">👥 Benutzerverwaltung</h2>
+        <p style="margin:4px 0 0 0; color:#94a3b8; font-size:0.85rem;">Zugänge und Berechtigungen für das Admin-Panel.</p>
+      </div>
+      <button id="newUserBtn" class="primary" style="background:#0284c7; border:none; padding:8px 14px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">+ Neuer Benutzer hinzufügen</button>
+    </div>
+
+    <div id="userFormContainer" class="hidden" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+      <h3 style="font-size: 0.95rem; margin-top:0; margin-bottom: 12px; color: #38bdf8;" id="userFormTitle">Benutzer anlegen</h3>
+      <form id="userForm">
+        <input type="hidden" id="userId">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+          <div>
+            <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:4px;">Benutzername</label>
+            <input type="text" id="userName" required autocomplete="off" style="width: 100%; box-sizing: border-box; padding: 8px; background: #020617; border: 1px solid #334155; color: #f8fafc; border-radius: 4px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:4px;">Passwort</label>
+            <input type="password" id="userPass" placeholder="Leer lassen für unverändert" style="width: 100%; box-sizing: border-box; padding: 8px; background: #020617; border: 1px solid #334155; color: #f8fafc; border-radius: 4px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:4px;">Rolle</label>
+            <select id="userRole" style="width: 100%; box-sizing: border-box; padding: 8px; background: #020617; border: 1px solid #334155; color: #f8fafc; border-radius: 4px;">
+              <option value="admin">Administrator (Vollzugriff)</option>
+              <option value="operator">Operator</option>
+            </select>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 22px;">
+            <input type="checkbox" id="userActive" checked style="width: 18px; height: 18px; cursor:pointer;">
+            <label for="userActive" style="color:#f8fafc; cursor:pointer; font-size:0.85rem;">Account Aktiv</label>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+          <button type="button" id="cancelUserBtn" style="background:#334155; border:none; padding:6px 12px; border-radius:4px; color:#f8fafc; cursor:pointer;">Abbrechen</button>
+          <button type="submit" style="background:#0284c7; border:none; padding:6px 14px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">Speichern</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="table-responsive">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left; color:#94a3b8; border-bottom:1px solid #1e293b; font-size:0.85rem;">
+            <th style="padding:10px;">ID</th>
+            <th style="padding:10px;">Benutzername</th>
+            <th style="padding:10px;">Rolle</th>
+            <th style="padding:10px;">Status</th>
+            <th style="padding:10px;">Letzter Login</th>
+            <th style="padding:10px; text-align:right;">Aktionen</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr><td colspan="6" style="padding:15px; text-align:center; color:#64748b;">Lade Benutzer...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+
+function switchView(tabKey, btn) {
+  const panels = ['bots', 'sources', 'moderation', 'users', 'backups'];
+  panels.forEach(k => {
+    const el = document.getElementById('panel-' + k);
+    if (el) {
+      el.style.display = (k === tabKey) ? 'block' : 'none';
+      el.classList.toggle('active', k === tabKey);
+    }
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  if (tabKey === 'users') {
+    fetchUsersList();
+  } else if (tabKey === 'backups') {
+    fetchBackupsList();
+  }
+}
+
+
+async function fetchUsersList() {
+  const tbody = document.getElementById("usersTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#64748b;">Lade Benutzerdaten...</td></tr>';
+
+  try {
+    const res = await fetch("/api/admin/users", {
+      headers: { "Accept": "application/json" }
+    });
+
+    if (res.status === 401) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#f87171;">Nicht autorisiert. Bitte Seite neu laden und anmelden.</td></tr>';
+      return;
+    }
+
+    const data = await res.json();
+    if (!res.ok) {
+      tbody.innerHTML = `<tr><td colspan="6" style="padding:15px; text-align:center; color:#f87171;">Fehler ${res.status}: ${data.error || 'Serverfehler'}</td></tr>`;
+      return;
+    }
+
+    const users = data.users || [];
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#64748b;">Keine Benutzer gefunden.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map(u => `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size:0.9rem;">
+        <td style="padding:10px; color:#64748b;">#${u.id}</td>
+        <td style="padding:10px;"><strong style="color:#f8fafc;">${u.username}</strong></td>
+        <td style="padding:10px;"><span style="padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600; background:${u.role==='admin'?'rgba(2,132,199,0.2)':'rgba(100,116,139,0.2)'}; color:${u.role==='admin'?'#38bdf8':'#94a3b8'}; border:1px solid ${u.role==='admin'?'rgba(2,132,199,0.3)':'rgba(100,116,139,0.3)'};">${u.role.toUpperCase()}</span></td>
+        <td style="padding:10px;"><span style="color:${u.is_active == 1 ? '#4ade80' : '#f87171'}; font-size:0.8rem; font-weight:600;">${u.is_active == 1 ? 'ACTIVE' : 'INACTIVE'}</span></td>
+        <td style="padding:10px; color:#94a3b8; font-size:0.8rem;">${u.last_login || '-'}</td>
+        <td style="padding:10px; text-align:right;">
+          <button style="background:#334155; border:none; color:#f8fafc; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.8rem; margin-right:4px;" onclick='editUser(${JSON.stringify(u)})'>Edit</button>
+          <button style="background:${u.is_active == 1 ? '#eab308' : '#16a34a'}; border:none; color:#fff; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.8rem; margin-right:4px;" onclick="toggleUser(${u.id})">${u.is_active == 1 ? 'Sperren' : 'Aktivieren'}</button>
+          <button style="background:#dc2626; border:none; color:#fff; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.8rem;" onclick="deleteUser(${u.id}, '${u.username}')">X</button>
+        </td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:15px; text-align:center; color:#f87171;">Netzwerkfehler: ${err.message}</td></tr>`;
+  }
+}
+
+function editUser(u) {
+  document.getElementById("userFormContainer").classList.remove("hidden");
+  document.getElementById("userFormTitle").innerText = "Benutzer bearbeiten: " + u.username;
+  document.getElementById("userId").value = u.id;
+  document.getElementById("userName").value = u.username;
+  document.getElementById("userPass").value = "";
+  document.getElementById("userPass").placeholder = "Leer lassen für unverändert";
+  document.getElementById("userRole").value = u.role;
+  document.getElementById("userActive").checked = (u.is_active == 1);
+}
+
+async function toggleUser(id) {
+  await fetch(`/api/admin/users/${id}/toggle`, { method: "POST" });
+  fetchUsersList();
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Benutzer "${name}" wirklich löschen?`)) return;
+  const res = await fetch(`/api/admin/users/${id}/delete`, { method: "POST" });
+  const data = await res.json();
+  if (data.error) alert(data.error);
+  fetchUsersList();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("newUserBtn")?.addEventListener("click", () => {
+    document.getElementById("userFormContainer").classList.remove("hidden");
+    document.getElementById("userFormTitle").innerText = "Neuen Benutzer anlegen";
+    document.getElementById("userId").value = "";
+    document.getElementById("userForm").reset();
+    document.getElementById("userPass").placeholder = "Passwort vergeben";
+  });
+
+  document.getElementById("cancelUserBtn")?.addEventListener("click", () => {
+    document.getElementById("userFormContainer").classList.add("hidden");
+  });
+
+  document.getElementById("userForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      id: document.getElementById("userId").value || null,
+      username: document.getElementById("userName").value.trim(),
+      password: document.getElementById("userPass").value,
+      role: document.getElementById("userRole").value,
+      is_active: document.getElementById("userActive").checked ? 1 : 0
+    };
+
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById("userFormContainer").classList.add("hidden");
+      fetchUsersList();
+    } else {
+      alert(data.error || "Fehler beim Speichern");
+    }
+  });
+});
+</script>
+
+
+
+
 </html>
+
+<script>
+async function fetchBackupsList() {
+    const tbody = document.getElementById("backupsTableBody");
+    if (!tbody) return;
+    
+    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#64748b;'>Lade Backups...</td></tr>";
+    
+    try {
+        const res = await fetch("/api/admin/backups");
+        const data = await res.json();
+        
+        if (data.success && data.backups) {
+            if (data.backups.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#64748b;'>Keine Backups vorhanden.</td></tr>";
+                return;
+            }
+            
+            tbody.innerHTML = "";
+            data.backups.forEach(b => {
+                const filename = b.file || b.filename || b.name || "Unbekannt";
+                const size = b.size || b.size_human || b.filesize || "-";
+                const date = b.date || b.created_at || b.time || "-";
+                
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${filename}</strong></td>
+                    <td>${size}</td>
+                    <td>${date}</td>
+                    <td style="text-align:right;">
+                        <a href="/api/admin/backups/${filename}/download" target="_blank" class="action-btn" style="text-decoration:none; padding:5px 10px; background:#0284c7; color:white; border-radius:4px; margin-right:8px; font-size:12px;">Download</a>
+                        <button onclick="deleteBackup('${filename}')" class="action-btn" style="padding:5px 10px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">Löschen</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#f87171;'>Fehler beim Lesen der Backups.</td></tr>";
+        }
+    } catch (e) {
+        console.error("Backup Fehler:", e);
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#f87171;'>Netzwerkfehler beim Laden.</td></tr>";
+    }
+}
+
+async function deleteBackup(filename) {
+    if (!confirm("Willst du das Backup " + filename + " wirklich unwiderruflich löschen?")) return;
+    try {
+        const res = await fetch(`/api/admin/backups/${filename}/delete`, { method: "POST" });
+        if (res.ok) {
+            fetchBackupsList();
+        } else {
+            alert("Fehler beim Löschen des Backups.");
+        }
+    } catch (e) {
+        console.error("Lösch-Fehler:", e);
+        alert("Netzwerkfehler beim Löschen.");
+    }
+}
+</script>
+</body>

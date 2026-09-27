@@ -87,7 +87,8 @@ $importService = new ImportService(
     $webhookService
 );
 
-$announcementHandler = new AnnouncementHandler($importService, $webhookService);
+$enableAnnounce = (bool) ($row['enable_announce'] ?? 1);
+$announcementHandler = new AnnouncementHandler($importService, $enableAnnounce ? $webhookService : null);
 
 $protocolParser = new IrcProtocolParser();
 
@@ -96,6 +97,23 @@ $client = new IrcClient(
     $port,
     $tls
 );
+
+// Channel Section Mapping (#chan:SECTION)
+$channelSectionMap = [];
+$cleanChannels = [];
+foreach ($channels as $entry) {
+    if (strpos($entry, ":") !== false) {
+        [$ch, $sec] = explode(":", $entry, 2);
+        $ch = trim($ch);
+        $sec = trim($sec);
+        $cleanChannels[] = $ch;
+        $channelSectionMap[strtolower($ch)] = $sec;
+    } else {
+        $cleanChannels[] = $entry;
+    }
+}
+$announcementHandler->setChannelSectionMap($channelSectionMap);
+$channels = array_values(array_unique($cleanChannels));
 
 $session = new IrcSession(
     $client,

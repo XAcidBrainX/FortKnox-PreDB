@@ -144,8 +144,11 @@ final class AuthController
         foreach ($bots as &$bot) {
             $id = (int) $bot['id'];
             $service = "fortknox-irc@{$id}.service";
-            $status = trim((string) @shell_exec("systemctl is-active {$service} 2>/dev/null"));
-            $bot['service_status'] = $status === 'active' ? 'active' : ($status ?: 'inactive');
+            $status = "";
+            try {
+                $status = trim((string) @shell_exec("systemctl is-active {$service} 2>/dev/null"));
+            } catch (\Throwable $t) {}
+            $bot['service_status'] = $status === 'active' ? 'active' : 'inactive';
         }
 
         echo json_encode(['bots' => $bots]);

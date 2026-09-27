@@ -207,6 +207,56 @@ final class ReleaseRepository
 
         return (int) $this->pdo->lastInsertId();
     }
+    
+    public function queueIrcAnnounceForAll(string $section, string $message, string $releaseName = ''): void
+    {
+        try {
+            $stmt = $this->pdo->query("SELECT id, channels, announce_sections, announce_languages FROM irc_networks WHERE is_enabled = 1");
+            $bots = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $insert = $this->pdo->prepare("INSERT INTO irc_outbox (network_id, channel, message) VALUES (?, ?, ?)");
+            
+            foreach ($bots as $bot) {
+                $allowed = trim($bot['announce_sections'] ?? '');
+                $shouldAnnounce = true;
+                
+                if ($allowed !== '') {
+                    $allowedArr = array_map('trim', explode(',', strtoupper($allowed)));
+                    if (!in_array(strtoupper($section), $allowedArr, true)) {
+                        $shouldAnnounce = false;
+                    }
+                }
+                
+                
+                if ($shouldAnnounce && trim($bot['announce_languages'] ?? '') !== '') {
+                    $allowedLangs = array_map('trim', explode(',', strtoupper(trim($bot['announce_languages']))));
+                    $langMatch = false;
+                    foreach ($allowedLangs as $lang) {
+                        if ($lang !== '' && preg_match('/[\.\-_]' . preg_quote($lang, '/') . '([\.\-_]|$)/i', $releaseName)) {
+                            $langMatch = true;
+                            break;
+                        }
+                    }
+                    if (!$langMatch) {
+                        $shouldAnnounce = false;
+                    }
+                }
+                
+                if ($shouldAnnounce) {
+                    $chans = array_map('trim', explode(',', $bot['channels']));
+                    foreach ($chans as $chan) {
+                        $chan = trim($chan);
+                        if ($chan !== '') {
+                            $insert->execute([$bot['id'], $chan, $message]);
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log("queueIrcAnnounceForAll Error: " . $e->getMessage());
+        }
+    }
+
     public function queueIrcAnnounce(int $networkId, string $channel, string $message): void
     {
         $stmt = $this->pdo->prepare("INSERT INTO irc_outbox (network_id, channel, message) VALUES (?, ?, ?)");

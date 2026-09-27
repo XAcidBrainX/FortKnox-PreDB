@@ -10,6 +10,14 @@ use FortKnox\Notifications\WebhookService;
 
 final class AnnouncementHandler
 {
+    /** @var array<string, string> */
+    private array $channelSectionMap = [];
+
+    public function setChannelSectionMap(array $map): void
+    {
+        $this->channelSectionMap = $map;
+    }
+
     public function __construct(
         private readonly ImportService $importService,
         private readonly ?WebhookService $webhookService = null,
@@ -26,9 +34,9 @@ final class AnnouncementHandler
             return null;
         }
 
-        $result = $this->importService->import(
-            $releaseName
-        );
+        $chan = strtolower(trim($message->channel()));
+        $forcedSection = $this->channelSectionMap[$chan] ?? null;
+        $result = $this->importService->import($releaseName, $forcedSection);
 
         return $result;
     }

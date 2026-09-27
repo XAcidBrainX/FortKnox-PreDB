@@ -15,7 +15,7 @@ final class ImportService
     ) {
     }
 
-    public function import(string $releaseName): ?ImportResult
+    public function import(string $releaseName, ?string $forcedSection = null): ?ImportResult
     {
         $releaseName = trim($releaseName);
 
@@ -30,6 +30,9 @@ final class ImportService
         }
 
         $parsed = $this->parser->parse($releaseName);
+        if ($forcedSection !== null && $forcedSection !== '') {
+            $parsed = $parsed->withCategory(strtoupper($forcedSection));
+        }
         $groupId = $this->repository->findOrCreateGroup($parsed->group());
         
         try {
@@ -40,10 +43,13 @@ final class ImportService
             try {
                 $sec = $parsed->category() ?: 'PRE';
                 $msg = chr(3) . "03[PRE]" . chr(3) . " " . chr(3) . "07[" . $sec . "]" . chr(3) . " " . chr(2) . $releaseName . chr(2);
-                $this->repository->queueIrcAnnounce(1, '#predb', $msg);
+                if (method_exists($this->repository, 'queueIrcAnnounceForAll')) {
+                    $this->repository->queueIrcAnnounceForAll($sec, $msg, $releaseName);
+                } else {
+                    $this->repository->queueIrcAnnounce(1, '#predb', $msg);
+                }
             } catch (\Throwable $e) {
-                fwrite(STDERR, "[IRC Outbox Error] " . $e->getMessage() . "
-");
+                error_log("[IRC Outbox Error] " . $e->getMessage());
             }
 
         } catch (\Throwable) {

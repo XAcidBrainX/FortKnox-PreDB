@@ -75,4 +75,21 @@ final class ParsedRelease
     {
         return $this->codec;
     }
+
+    public function withCategory(?string $category): self
+    {
+        return new self(
+            $this->releaseName,
+            $this->title,
+            $this->group,
+            $category ?: $this->category,
+            $this->year,
+            $this->season,
+            $this->episode,
+            $this->resolution,
+            $this->source,
+            $this->language,
+            $this->codec
+        );
+    }
 }

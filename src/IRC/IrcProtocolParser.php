@@ -44,7 +44,7 @@ final class IrcProtocolParser
         $command = strtoupper($tokens[0]);
         $channel = $tokens[1];
 
-        if ($command !== 'PRIVMSG') {
+        if (!in_array($command, ['PRIVMSG', 'NOTICE'], true)) {
             return null;
         }
 
@@ -57,7 +57,8 @@ final class IrcProtocolParser
         return new IrcMessage(
             sender: $sender,
             channel: $channel,
-            text: $trailing
+            text: $trailing,
+            command: $command
         );
     }
 

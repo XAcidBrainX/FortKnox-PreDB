@@ -127,25 +127,55 @@ JsonResponse::send([
 
         $conditions = [];
         $params = [];
+        $fromSql = 'releases';
 
-        if (!empty($query['q'])) {
-            $conditions[] = '(
-                name LIKE :search_name
-                OR title LIKE :search_title
-                OR category LIKE :search_category
-                OR language LIKE :search_language
-                OR codec LIKE :search_codec
-                OR source LIKE :search_source
-            )';
+        $searchQuery = trim((string) ($query['q'] ?? ''));
 
-            $search = '%' . $query['q'] . '%';
+        if ($searchQuery !== '') {
+            // Split FULLTEXT and exact metadata lookups into UNION branches.
+            // This keeps each branch eligible for its own index; a large OR
+            // expression would make MariaDB scan the entire 25M-row table.
+            if (mb_strlen($searchQuery, 'UTF-8') >= 3) {
+                $searchIdsSql = '
+                    SELECT id
+                    FROM releases
+                    WHERE MATCH(name, title) AGAINST (:search_fulltext IN NATURAL LANGUAGE MODE)
+                    UNION
+                    SELECT id FROM releases WHERE category = :search_category
+                    UNION
+                    SELECT id FROM releases WHERE language = :search_language
+                    UNION
+                    SELECT id FROM releases WHERE codec = :search_codec
+                ';
 
-            $params['search_name'] = $search;
-            $params['search_title'] = $search;
-            $params['search_category'] = $search;
-            $params['search_language'] = $search;
-            $params['search_codec'] = $search;
-            $params['search_source'] = $search;
+                $params['search_fulltext'] = $searchQuery;
+            } else {
+                // InnoDB FULLTEXT ignores very short tokens. Prefix lookups
+                // preserve useful short searches while allowing B-tree indexes.
+                $searchIdsSql = '
+                    SELECT id FROM releases WHERE name LIKE :search_name_prefix
+                    UNION
+                    SELECT id FROM releases WHERE title LIKE :search_title_prefix
+                    UNION
+                    SELECT id FROM releases WHERE category = :search_category
+                    UNION
+                    SELECT id FROM releases WHERE language = :search_language
+                    UNION
+                    SELECT id FROM releases WHERE codec = :search_codec
+                ';
+
+                $prefix = $searchQuery . '%';
+                $params['search_name_prefix'] = $prefix;
+                $params['search_title_prefix'] = $prefix;
+            }
+
+            $params['search_category'] = $searchQuery;
+            $params['search_language'] = $searchQuery;
+            $params['search_codec'] = $searchQuery;
+
+            $fromSql = '(SELECT r.*
+                        FROM (' . $searchIdsSql . ') AS search_ids
+                        STRAIGHT_JOIN releases AS r ON r.id = search_ids.id) AS releases';
         }
 
         if (!empty($query['category'])) {
@@ -194,7 +224,7 @@ JsonResponse::send([
          * Count total matching releases.
          */
         $countSql = 'SELECT COUNT(*)
-                     FROM releases' . $where;
+                     FROM ' . $fromSql . $where;
 
         $countStmt = $pdo->prepare($countSql);
         $countStmt->execute($params);
@@ -273,7 +303,7 @@ JsonResponse::send([
                     nuke,
                     created_at,
                     updated_at
-                FROM releases'
+                FROM ' . $fromSql
             . $where
             . sprintf(
                 ' ORDER BY %s %s LIMIT %d OFFSET %d',

@@ -167,7 +167,7 @@ final class IrcClient
         if (
             preg_match('/^PASS\s+/i', $trimmed) === 1
             || preg_match(
-                '/^PRIVMSG\s+\S+\s+:\s*IDENTIFY\s+/i',
+                '/^PRIVMSG\s+\S+\s+:\s*(?:IDENTIFY|RECOVER)\s+/i',
                 $trimmed
             ) === 1
         ) {

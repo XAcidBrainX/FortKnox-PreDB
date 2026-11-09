@@ -435,15 +435,153 @@
             border-color: #38bdf8;
             color: #ffffff;
         }
+
+        /* FortKnox Release Intelligence – Metallic Neon Dashboard */
+        :root {
+            color-scheme: dark;
+            --fk-bg: #070b12;
+            --fk-panel: rgba(16, 23, 34, .88);
+            --fk-panel-strong: #111a27;
+            --fk-line: rgba(105, 220, 224, .18);
+            --fk-muted: #91a2b5;
+            --fk-text: #eaf4f7;
+            --fk-cyan: #38d9e8;
+            --fk-green: #8bea35;
+            --fk-glow: rgba(44, 218, 205, .18);
+        }
+        body {
+            color: var(--fk-text);
+            background:
+                radial-gradient(ellipse at 12% 0%, rgba(40, 220, 95, .13), transparent 34%),
+                radial-gradient(ellipse at 88% 4%, rgba(22, 191, 225, .14), transparent 38%),
+                linear-gradient(145deg, #070b12 0%, #0a111c 48%, #080d16 100%);
+            background-attachment: fixed;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: .16;
+            background-image: linear-gradient(rgba(93, 196, 205, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(93, 196, 205, .08) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, black, transparent 78%);
+        }
+        header {
+            position: relative;
+            z-index: 1;
+            padding: 22px clamp(18px, 4vw, 56px);
+            background: linear-gradient(110deg, rgba(8, 15, 24, .97), rgba(13, 25, 37, .94));
+            border-bottom: 1px solid rgba(56, 217, 232, .28);
+            box-shadow: 0 12px 42px rgba(0,0,0,.32), 0 1px 22px rgba(38,210,198,.06);
+        }
+        header h1 {
+            font-size: clamp(26px, 3vw, 38px);
+            line-height: 1.05;
+            letter-spacing: .055em;
+            text-transform: uppercase;
+            background: linear-gradient(180deg, #fff 5%, #aebdc8 48%, #647985 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 24px rgba(56,217,232,.12);
+        }
+        header span {
+            display: block;
+            margin-top: 8px;
+            color: #a5bbc7;
+            letter-spacing: .17em;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+        main { position: relative; z-index: 1; max-width: 1580px; padding: 30px clamp(16px, 3vw, 42px) 56px; }
+        .card, .section, .category {
+            background: linear-gradient(145deg, rgba(20, 31, 45, .94), rgba(11, 18, 29, .96));
+            border: 1px solid var(--fk-line);
+            border-radius: 12px;
+            box-shadow: inset 0 1px rgba(255,255,255,.035), 0 12px 30px rgba(0,0,0,.2);
+        }
+        .card { position: relative; overflow: hidden; padding: 23px 24px; }
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--fk-green), var(--fk-cyan), transparent);
+            opacity: .8;
+        }
+        .card .label, .category-name { color: var(--fk-muted); text-transform: uppercase; letter-spacing: .12em; font-size: 10px; }
+        .card .value { margin-top: 7px; font-size: clamp(28px, 3vw, 38px); color: #f0fbff; text-shadow: 0 0 20px rgba(56,217,232,.16); font-variant-numeric: tabular-nums; }
+        .section { margin-bottom: 22px; overflow: hidden; }
+        .section-header {
+            min-height: 58px;
+            padding: 17px 22px;
+            color: #eaf8fb;
+            background: linear-gradient(90deg, rgba(33, 53, 67, .48), rgba(15, 26, 39, .18));
+            border-bottom: 1px solid var(--fk-line);
+            letter-spacing: .045em;
+        }
+        .section-header h2 { margin: 0; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; }
+        .section-body { padding: 22px; }
+        input, select, button {
+            border: 1px solid rgba(124, 174, 190, .24);
+            border-radius: 7px;
+            background: #0b1420;
+            color: var(--fk-text);
+            transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+        }
+        input::placeholder { color: #718597; }
+        input:focus, select:focus { outline: none; border-color: var(--fk-cyan); box-shadow: 0 0 0 3px rgba(56,217,232,.12); }
+        button {
+            background: linear-gradient(135deg, #173b43, #153044);
+            border-color: rgba(56,217,232,.4);
+            color: #eaffff;
+            letter-spacing: .025em;
+        }
+        button:hover:not(:disabled) { background: linear-gradient(135deg, #205b4a, #15536a); border-color: var(--fk-green); box-shadow: 0 0 18px rgba(56,217,232,.13); }
+        button:disabled { opacity: .35; cursor: not-allowed; }
+        .admin-btn {
+            background: rgba(18, 39, 50, .8);
+            border: 1px solid rgba(56,217,232,.42);
+            color: var(--fk-cyan);
+            padding: 10px 17px;
+        }
+        .admin-btn:hover { background: rgba(22, 65, 70, .85); border-color: var(--fk-green); color: white; }
+        .category { min-width: 145px; padding: 16px 19px; }
+        .category-count { margin-top: 8px; color: var(--fk-green); font-size: 26px; text-shadow: 0 0 16px rgba(139,234,53,.16); }
+        .results-info, .metadata, .page-info { color: var(--fk-muted); }
+        table { border-collapse: separate; border-spacing: 0; }
+        th { color: #8fa8b7; text-transform: uppercase; letter-spacing: .1em; font-size: 10px; background: rgba(39, 62, 77, .26); }
+        th, td { border-bottom: 1px solid rgba(105, 220, 224, .11); padding: 14px 12px; }
+        tr.release-row { transition: background .16s ease; }
+        tr.release-row:hover { background: rgba(41, 207, 201, .075); }
+        .release-name { color: #e9f8fb; }
+        .badge { color: #a9eff0; background: rgba(40, 164, 175, .12); border: 1px solid rgba(56,217,232,.22); border-radius: 5px; }
+        .status { color: var(--fk-green); letter-spacing: .08em; text-transform: uppercase; font-size: 11px; }
+        #live-feed-indicator { color: var(--fk-green); background: rgba(139,234,53,.09); border-color: rgba(139,234,53,.36); box-shadow: 0 0 16px rgba(139,234,53,.08); }
+        .live-release { background: rgba(5, 13, 22, .5); border-color: rgba(105,220,224,.13); }
+        .live-release:hover { background: rgba(20, 54, 62, .45); border-color: rgba(56,217,232,.4); }
+        .live-release strong { color: #eaf8fb; }
+        .live-release-meta span:first-child { color: var(--fk-cyan); }
+        .new-release-notification { background: #10242b; border-color: rgba(139,234,53,.48); }
+        .error { color: #ff8585; }
+        @media (max-width: 700px) {
+            header { gap: 14px; align-items: flex-start; }
+            header span { max-width: 240px; line-height: 1.5; }
+            .section-body { padding: 15px; }
+            .card { padding: 18px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+        }
     </style>
 </head>
 
 <body>
 
 <header>
-    <div>
-        <h1>🛡️ FortKnox PreDB</h1>
-        <span>PreDB Management &amp; Release Intelligence</span>
+    <div class="fk-dashboard-brand">
+        <h1>FortKnox</h1>
+        <span>Release Intelligence &amp; Control Center</span>
     </div>
     <a href="/admin.html" class="admin-btn">🔒 Admin Login</a>
 </header>
@@ -594,6 +732,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Release</th>
+                        <th>Veröffentlicht</th>
                         <th>Group</th>
                         <th>Kategorie</th>
                         <th>Jahr</th>
@@ -1147,7 +1286,7 @@ async function searchReleases() {
         document.getElementById(
             'releases-table'
         ).innerHTML =
-            '<tr><td colspan="6" class="error">API nicht erreichbar.</td></tr>';
+            '<tr><td colspan="7" class="error">API nicht erreichbar.</td></tr>';
 
     }
 }
@@ -1194,7 +1333,7 @@ function renderResults(data) {
     if (!data.releases.length) {
 
         table.innerHTML =
-            '<tr><td colspan="6">Keine Releases gefunden.</td></tr>';
+            '<tr><td colspan="7">Keine Releases gefunden.</td></tr>';
 
         return;
     }
@@ -1245,6 +1384,10 @@ function renderResults(data) {
                     ${escapeHtml(metadata)}
                 </div>
 
+            </td>
+
+            <td>
+                ${escapeHtml(formatReleaseTime(release.created_at))}
             </td>
 
             <td>
@@ -1431,6 +1574,14 @@ async function pollLiveReleases() {
 
 </script>
 
+<script>
+    // Datensparsame Tageszählung: der Server speichert nur täglich wechselnde HMAC-Kennungen.
+    if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/visits/track', new Blob([], { type: 'application/json' }));
+    } else {
+        fetch('/api/visits/track', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+    }
+</script>
 </body>
 </html>
 

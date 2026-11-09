@@ -24,3 +24,11 @@ echo "===== IRC Protocol Test =====" . PHP_EOL;
 echo "Sender:  " . $message->sender() . PHP_EOL;
 echo "Channel: " . $message->channel() . PHP_EOL;
 echo "Text:    " . $message->text() . PHP_EOL;
+
+$notice = $parser->parse(':mircuser!ident@example.net NOTICE Pre-DB :DH1080_INIT ' . str_repeat('A', 180) . ' CBC');
+if ($notice === null || $notice->command() !== 'NOTICE' || $notice->sender() !== 'mircuser' || $notice->channel() !== 'Pre-DB') {
+    fwrite(STDERR, "NOTICE / DH1080 parser test failed.\n");
+    exit(1);
+}
+
+echo "NOTICE / DH1080 parser test passed." . PHP_EOL;

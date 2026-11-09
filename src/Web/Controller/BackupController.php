@@ -9,11 +9,21 @@ use FortKnox\Database\Connection;
 final class BackupController
 {
     private string $backupDir;
+    private readonly array $dbConfig;
 
     public function __construct(
         private readonly Connection $connection,
-        private readonly array $dbConfig
+        array $dbConfig
     ) {
+        // public/index.php passes parsed .env keys (DB_HOST, DB_DATABASE, ...).
+        // Accept both the .env names and normalized names for compatibility.
+        $this->dbConfig = [
+            'host' => (string) ($dbConfig['DB_HOST'] ?? $dbConfig['host'] ?? '127.0.0.1'),
+            'port' => (int) ($dbConfig['DB_PORT'] ?? $dbConfig['port'] ?? 3306),
+            'database' => (string) ($dbConfig['DB_DATABASE'] ?? $dbConfig['database'] ?? ''),
+            'username' => (string) ($dbConfig['DB_USERNAME'] ?? $dbConfig['username'] ?? ''),
+            'password' => (string) ($dbConfig['DB_PASSWORD'] ?? $dbConfig['password'] ?? ''),
+        ];
         $this->backupDir = dirname(__DIR__, 3) . '/storage/backups';
         if (!is_dir($this->backupDir)) {
             @mkdir($this->backupDir, 0775, true);
@@ -27,6 +37,31 @@ final class BackupController
             return 'mariadb-dump';
         }
         return 'mysqldump';
+    }
+
+    private function createClientDefaultsFile(): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'fk-mariadb-');
+        if ($path === false) {
+            throw new \RuntimeException('Temporäre Datenbank-Konfiguration konnte nicht angelegt werden.');
+        }
+
+        $lines = ['[client]'];
+        foreach (['user' => 'username', 'password' => 'password', 'host' => 'host', 'port' => 'port'] as $option => $key) {
+            $value = (string) ($this->dbConfig[$key] ?? '');
+            if ($value === '' && $option !== 'password') {
+                continue;
+            }
+            $escaped = str_replace(["\\", '"', "\n", "\r"], ["\\\\", '\"', '\n', '\r'], $value);
+            $lines[] = $option . '="' . $escaped . '"';
+        }
+
+        if (file_put_contents($path, implode("\n", $lines) . "\n") === false) {
+            @unlink($path);
+            throw new \RuntimeException('Temporäre Datenbank-Konfiguration konnte nicht geschrieben werden.');
+        }
+        @chmod($path, 0600);
+        return $path;
     }
 
     public function listBackups(): void
@@ -51,7 +86,7 @@ final class BackupController
         usort($files, fn($a, $b) => strcmp($b['created_at'], $a['created_at']));
 
         $dumpBin = $this->getDumpBinary();
-        $isRunning = (int) shell_exec("pgrep -f '{$dumpBin}' | wc -l") > 0;
+        $isRunning = (int) shell_exec("pgrep -x '{$dumpBin}' >/dev/null 2>&1; echo $?") === 0;
 
         echo json_encode(['success' => true, 'backups' => $files, 'dump_running' => $isRunning]);
     }
@@ -68,35 +103,54 @@ final class BackupController
         $date = date('Y-m-d_H-i-s');
         $filename = "config_backup_{$date}.sql.gz";
         $target = $this->backupDir . '/' . $filename;
+        $partial = $target . '.part';
+        $defaultsFile = $this->createClientDefaultsFile();
+        $errorFile = tempnam(sys_get_temp_dir(), 'fk-dump-error-');
 
-        $user = escapeshellarg($this->dbConfig['username'] ?? 'root');
-        $pass = escapeshellarg($this->dbConfig['password'] ?? '');
-        $db = escapeshellarg($this->dbConfig['database'] ?? 'fortknox');
-        $dumpBin = $this->getDumpBinary();
+        try {
+            $pdo = $this->connection->get();
+            $allTables = $pdo->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN);
+            $ignoreTables = ['releases', 'predb', 'pre_releases', 'releases_archive'];
+            $tablesToDump = array_values(array_filter(
+                $allTables,
+                fn($table) => !in_array(strtolower((string) $table), $ignoreTables, true)
+            ));
 
-        // Alle Tabellen außer den Massendaten-Tabellen ermitteln
-        $pdo = $this->connection->get();
-        $stmt = $pdo->query("SHOW TABLES");
-        $allTables = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            if (!$tablesToDump) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Keine Tabellen für das Konfigurationsbackup gefunden.']);
+                return;
+            }
 
-        $ignoreTables = ['releases', 'predb', 'pre_releases', 'releases_archive'];
-        $tablesToDump = array_filter($allTables, fn($t) => !in_array(strtolower($t), $ignoreTables, true));
-
-        if (empty($tablesToDump)) {
-            $tablesArg = 'admin_users';
-        } else {
             $tablesArg = implode(' ', array_map('escapeshellarg', $tablesToDump));
-        }
+            $dumpBin = escapeshellarg($this->getDumpBinary());
+            $defaultsArg = escapeshellarg('--defaults-extra-file=' . $defaultsFile);
+            $database = escapeshellarg($this->dbConfig['database']);
+            $stderr = $errorFile !== false ? ' 2>' . escapeshellarg($errorFile) : ' 2>/dev/null';
+            $command = $dumpBin . ' ' . $defaultsArg . ' --single-transaction --quick '
+                . $database . ' ' . $tablesArg . $stderr . ' | gzip -c > ' . escapeshellarg($partial);
 
-        $cmd = "{$dumpBin} -u{$user} -p{$pass} {$db} {$tablesArg} 2>&1 | gzip > " . escapeshellarg($target);
-        exec($cmd, $output, $ret);
+            exec('/bin/bash -o pipefail -c ' . escapeshellarg($command), $output, $returnCode);
+            exec('gzip -t ' . escapeshellarg($partial) . ' 2>/dev/null', $gzipOutput, $gzipCode);
 
-        if (file_exists($target) && filesize($target) > 50) {
-            echo json_encode(['success' => true, 'file' => $filename]);
-        } else {
-            @unlink($target);
-            http_response_code(500);
-            echo json_encode(['error' => 'Dump fehlgeschlagen: ' . implode(' ', array_slice($output, 0, 3))]);
+            if ($returnCode === 0 && $gzipCode === 0 && is_file($partial) && filesize($partial) > 50) {
+                @chmod($partial, 0600);
+                if (!@rename($partial, $target)) {
+                    @unlink($partial);
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Backup konnte nicht finalisiert werden.']);
+                    return;
+                }
+                echo json_encode(['success' => true, 'file' => $filename]);
+            } else {
+                $detail = $errorFile && is_file($errorFile) ? trim((string) file_get_contents($errorFile)) : '';
+                @unlink($partial);
+                http_response_code(500);
+                echo json_encode(['error' => 'Datenbank-Dump fehlgeschlagen.' . ($detail !== '' ? ' ' . substr($detail, 0, 240) : '')]);
+            }
+        } finally {
+            @unlink($defaultsFile);
+            if ($errorFile !== false) @unlink($errorFile);
         }
     }
 
@@ -111,16 +165,28 @@ final class BackupController
 
         $date = date('Y-m-d_H-i-s');
         $target = $this->backupDir . "/fulldb_backup_{$date}.sql.gz";
+        $partial = $target . '.part';
+        $defaultsFile = $this->createClientDefaultsFile();
 
-        $user = escapeshellarg($this->dbConfig['username'] ?? 'root');
-        $pass = escapeshellarg($this->dbConfig['password'] ?? '');
-        $db = escapeshellarg($this->dbConfig['database'] ?? 'fortknox');
-        $dumpBin = $this->getDumpBinary();
+        $dumpBin = escapeshellarg($this->getDumpBinary());
+        $defaultsArg = escapeshellarg('--defaults-extra-file=' . $defaultsFile);
+        $database = escapeshellarg($this->dbConfig['database']);
+        $cleanup = 'rm -f ' . escapeshellarg($defaultsFile) . ' ' . escapeshellarg($partial);
+        $script = 'umask 077; trap ' . escapeshellarg($cleanup) . ' EXIT; '
+            . $dumpBin . ' ' . $defaultsArg . ' --single-transaction --quick '
+            . $database . ' | gzip -c > ' . escapeshellarg($partial)
+            . ' && gzip -t ' . escapeshellarg($partial)
+            . ' && mv ' . escapeshellarg($partial) . ' ' . escapeshellarg($target);
 
-        $cmd = "nohup sh -c '{$dumpBin} --single-transaction --quick -u{$user} -p{$pass} {$db} | gzip > {$target}' > /dev/null 2>&1 &";
-        exec($cmd);
+        $background = 'nohup /bin/bash -o pipefail -c ' . escapeshellarg($script)
+            . ' >/dev/null 2>&1 </dev/null &';
+        exec($background);
 
-        echo json_encode(['success' => true, 'message' => 'Vollständiges Backup wurde im Hintergrund gestartet.']);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Vollständiger Datenbank-Dump wurde im Hintergrund gestartet.',
+            'file' => basename($target),
+        ]);
     }
 
     public function downloadBackup(string $file): void
@@ -131,9 +197,13 @@ final class BackupController
         }
 
         $cleanFile = basename($file);
+        if (!preg_match('/\.(?:sql\.gz|tar\.gz|sql)$/i', $cleanFile)) {
+            http_response_code(400);
+            exit('Ungültiger Backup-Dateityp.');
+        }
         $path = $this->backupDir . '/' . $cleanFile;
 
-        if (!file_exists($path)) {
+        if (!is_file($path)) {
             http_response_code(404);
             exit('Backup nicht gefunden.');
         }
@@ -159,9 +229,14 @@ final class BackupController
         }
 
         $cleanFile = basename($file);
+        if (!preg_match('/\.(?:sql\.gz|tar\.gz|sql)$/i', $cleanFile)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Ungültiger Backup-Dateityp.']);
+            return;
+        }
         $path = $this->backupDir . '/' . $cleanFile;
 
-        if (file_exists($path)) {
+        if (is_file($path)) {
             @unlink($path);
             echo json_encode(['success' => true]);
         } else {

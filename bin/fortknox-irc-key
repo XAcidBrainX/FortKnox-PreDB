@@ -1,0 +1,42 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+use FortKnox\IRC\FiSHKeyVault;
+
+$options = getopt('', ['network-id:', 'channel:', 'remove', 'list']);
+$networkId = (int) ($options['network-id'] ?? 0);
+if ($networkId < 1) {
+    fwrite(STDERR, "Usage: bin/fortknox-irc-key --network-id=1 --channel=#predb [--remove|--list]\n");
+    exit(2);
+}
+$env = parse_ini_file(dirname(__DIR__) . '/.env') ?: [];
+$pdo = new PDO('mysql:host=' . ($env['DB_HOST'] ?? '127.0.0.1') . ';port=' . ($env['DB_PORT'] ?? 3306) . ';dbname=' . ($env['DB_DATABASE'] ?? 'fortknox') . ';charset=utf8mb4', $env['DB_USERNAME'] ?? 'root', $env['DB_PASSWORD'] ?? '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+if (isset($options['list'])) {
+    $stmt = $pdo->prepare('SELECT channel FROM irc_channel_keys WHERE network_id = ? ORDER BY channel');
+    $stmt->execute([$networkId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $channel) echo $channel . " (key stored)\n";
+    exit(0);
+}
+$channel = trim((string) ($options['channel'] ?? ''));
+if ($channel === '' || $channel[0] !== '#' || preg_match('/[\s,]/', $channel)) {
+    fwrite(STDERR, "A valid #channel is required.\n"); exit(2);
+}
+if (isset($options['remove'])) {
+    $stmt = $pdo->prepare('DELETE FROM irc_channel_keys WHERE network_id = ? AND LOWER(channel) = LOWER(?)');
+    $stmt->execute([$networkId, $channel]);
+    echo "FiSH key removed for {$channel}.\n"; exit(0);
+}
+fwrite(STDOUT, "FiSH key for {$channel} (input hidden): ");
+if (function_exists('shell_exec')) @shell_exec('stty -echo');
+$key = trim((string) fgets(STDIN));
+if (function_exists('shell_exec')) @shell_exec('stty echo');
+echo "\n";
+if ($key === '') { fwrite(STDERR, "Empty key; nothing saved.\n"); exit(2); }
+$vault = new FiSHKeyVault(dirname(__DIR__));
+$encrypted = $vault->encrypt($key);
+$stmt = $pdo->prepare('INSERT INTO irc_channel_keys (network_id, channel, encrypted_key) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE encrypted_key = VALUES(encrypted_key)');
+$stmt->execute([$networkId, strtolower($channel), $encrypted]);
+echo "Encrypted FiSH key stored for network {$networkId}, {$channel}. Restart the corresponding IRC service to load the new key.\n";

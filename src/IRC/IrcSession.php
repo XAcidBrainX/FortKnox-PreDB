@@ -22,6 +22,10 @@ final class IrcSession
         private readonly ?string $password = null,
         private readonly ?string $nickServPassword = null,
         private readonly ?string $nickServService = 'NickServ',
+        private array $channelKeys = [],
+        private readonly ?FiSHKeyStore $fishKeyStore = null,
+        private readonly ?string $fishPeerNick = null,
+        private readonly string $fishDh1080Channel = '#predb',
     ) {
     }
 
@@ -208,6 +212,8 @@ final class IrcSession
                 $this->authenticateNickServ();
             }
             $this->joinChannels();
+            $this->identified = true;
+            echo '[IRC] Registration complete; outbox enabled for network ' . $this->nickname . PHP_EOL;
             return;
         }
 
@@ -229,6 +235,15 @@ final class IrcSession
             return;
         }
 
+        if ($message->command() === 'NOTICE') {
+            $this->handleFiSHNotice($message);
+            return;
+        }
+
+        if ($message->command() !== 'PRIVMSG') {
+            return;
+        }
+
         /*
          * Only configured channels are processed.
          */
@@ -238,6 +253,26 @@ final class IrcSession
                 PHP_EOL;
 
             return;
+        }
+
+        // Decrypt FiSH 10 channel messages before they enter the PreDB parser.
+        $incomingText = $message->text();
+        if (str_starts_with($incomingText, '+OK ')) {
+            $fishKey = $this->channelKeys[strtolower($message->channel())] ?? null;
+            if (!is_string($fishKey) || $fishKey === '') {
+                echo '> Encrypted message ignored: no FiSH key configured for ' . $message->channel() . PHP_EOL;
+                return;
+            }
+            try {
+                $decrypted = FiSH::decrypt($incomingText, $fishKey);
+            } catch (\Throwable) {
+                $decrypted = null;
+            }
+            if ($decrypted === null || $decrypted === '') {
+                echo '> Encrypted message ignored: FiSH decryption failed for ' . $message->channel() . PHP_EOL;
+                return;
+            }
+            $message = new IrcMessage($message->sender(), $message->channel(), $decrypted);
         }
 
         /*
@@ -254,6 +289,49 @@ final class IrcSession
 
         echo '> RELEASE PROCESSED' . PHP_EOL;
         return;
+    }
+
+
+    private function handleFiSHNotice(IrcMessage $message): void
+    {
+        if (strcasecmp($message->channel(), $this->nickname) !== 0) {
+            return;
+        }
+
+        if (!preg_match('/^DH1080_INIT\s+([A-Za-z0-9+\/]{180}A)\s+CBC$/i', trim($message->text()), $match)) {
+            return;
+        }
+
+        if ($this->fishPeerNick === null || $this->fishPeerNick === '') {
+            echo '[FiSH] DH1080 request ignored: IRC_FISH_PEER_NICK is not configured.' . PHP_EOL;
+            return;
+        }
+
+        if (strcasecmp($message->sender(), $this->fishPeerNick) !== 0) {
+            echo '[FiSH] DH1080 request ignored from an unapproved nick.' . PHP_EOL;
+            return;
+        }
+
+        if ($this->fishKeyStore === null || !$this->isAllowedChannel($this->fishDh1080Channel)) {
+            echo '[FiSH] DH1080 request ignored: channel key storage or target channel is unavailable.' . PHP_EOL;
+            return;
+        }
+
+        try {
+            $local = FiSHDh1080::generate();
+            $sharedSecret = FiSHDh1080::compute($local['private'], $match[1]);
+            $channelKey = 'cbc:' . $sharedSecret;
+
+            // Persist before replying: mIRC only installs the key after FINISH.
+            $this->fishKeyStore->store($this->fishDh1080Channel, $channelKey);
+            $this->channelKeys[strtolower($this->fishDh1080Channel)] = $channelKey;
+
+            $this->send('NOTICE ' . $message->sender() . ' :DH1080_FINISH ' . $local['public'] . ' CBC');
+            echo '[FiSH] DH1080 CBC key exchange completed and channel key stored for '
+                . $this->fishDh1080Channel . ' (peer ' . $message->sender() . ').' . PHP_EOL;
+        } catch (\Throwable $exception) {
+            echo '[FiSH] DH1080 key exchange failed: ' . $exception->getMessage() . PHP_EOL;
+        }
     }
 
     private function authenticateNickServ(): void
@@ -400,23 +478,60 @@ final class IrcSession
     }
     private function processOutbox(): void
     {
-        static $pdo = null;
-        if ($pdo === null) {
-            try {
-                $env = parse_ini_file(dirname(__DIR__, 2) . '/.env') ?: [];
-                $pdo = new \PDO('mysql:host=' . ($env['DB_HOST'] ?? '127.0.0.1') . ';port=' . ($env['DB_PORT'] ?? 3306) . ';dbname=' . ($env['DB_DATABASE'] ?? 'fortknox') . ';charset=utf8mb4', $env['DB_USERNAME'] ?? 'root', $env['DB_PASSWORD'] ?? '');
-            } catch (\Throwable) { return; }
+        if (!$this->identified) {
+            return;
         }
 
+        static $pdo = null;
+
         try {
-            $stmt = $pdo->query("SELECT id, channel, message FROM irc_outbox WHERE status = 'pending' ORDER BY id ASC LIMIT 5");
-            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            foreach ($rows as $row) {
-                $this->client->send("PRIVMSG " . $row['channel'] . " :" . $row['message']);
-                $upd = $pdo->prepare("UPDATE irc_outbox SET status = 'sent', sent_at = NOW() WHERE id = ?");
-                $upd->execute([$row['id']]);
-                usleep(250000); // 250ms Flood-Protection
+            if ($pdo === null) {
+                $env = parse_ini_file(dirname(__DIR__, 2) . '/.env');
+                if ($env === false) {
+                    throw new RuntimeException('Unable to read .env for IRC outbox.');
+                }
+                $pdo = new \PDO(
+                    'mysql:host=' . ($env['DB_HOST'] ?? '127.0.0.1')
+                    . ';port=' . ($env['DB_PORT'] ?? 3306)
+                    . ';dbname=' . ($env['DB_DATABASE'] ?? 'fortknox')
+                    . ';charset=utf8mb4',
+                    $env['DB_USERNAME'] ?? 'root',
+                    $env['DB_PASSWORD'] ?? '',
+                    [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+                );
             }
-        } catch (\Throwable) {}
+
+            $stmt = $pdo->prepare("SELECT id, network_id, channel, message FROM irc_outbox WHERE status = 'pending' AND created_at >= NOW() - INTERVAL 10 MINUTE AND network_id = (SELECT id FROM irc_networks WHERE nick = ? LIMIT 1) ORDER BY id ASC LIMIT 5");
+            $stmt->execute([$this->nickname]);
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $update = $pdo->prepare("UPDATE irc_outbox SET status = 'sent', sent_at = NOW() WHERE id = ? AND network_id = ? AND status = 'pending'");
+            foreach ($rows as $row) {
+                $outgoing = (string) $row['message'];
+                $fishKey = $this->channelKeys[strtolower((string) $row['channel'])] ?? null;
+                if (is_string($fishKey) && $fishKey !== '') {
+                    $outgoing = FiSH::encrypt($outgoing, $fishKey);
+                }
+                $this->client->send('PRIVMSG ' . $row['channel'] . ' :' . $outgoing);
+                $update->execute([$row['id'], $row['network_id']]);
+                if ($update->rowCount() !== 1) {
+                    throw new RuntimeException('Outbox row ' . $row['id'] . ' sent but status update failed.');
+                }
+                usleep(250000); // Flood protection
+            }
+        } catch (\Throwable $exception) {
+            // A MariaDB restart invalidates this long-lived PDO handle.
+            // Drop it so the next outbox poll establishes a fresh connection.
+            $pdo = null;
+
+            // Avoid flooding the IRC log while the database is unavailable.
+            static $lastOutboxErrorAt = 0;
+            $now = time();
+            if ($now - $lastOutboxErrorAt >= 30) {
+                fwrite(STDERR, '[IRC] Outbox temporarily unavailable; database connection will be retried: '
+                    . $exception->getMessage() . PHP_EOL);
+                $lastOutboxErrorAt = $now;
+            }
+        }
     }
 }

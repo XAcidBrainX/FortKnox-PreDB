@@ -9,7 +9,8 @@
         "ext-mysqli": "*",
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
-        "ext-openssl": "*"
+        "ext-openssl": "*",
+        "phpseclib/phpseclib": "^3.0"
     },
     "autoload": {
         "psr-4": {

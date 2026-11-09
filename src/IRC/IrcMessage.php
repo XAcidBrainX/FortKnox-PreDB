@@ -10,6 +10,7 @@ final class IrcMessage
         private readonly string $sender,
         private readonly string $channel,
         private readonly string $text,
+        private readonly string $command = 'PRIVMSG',
     ) {
     }
 
@@ -26,5 +27,10 @@ final class IrcMessage
     public function text(): string
     {
         return $this->text;
+    }
+
+    public function command(): string
+    {
+        return $this->command;
     }
 }

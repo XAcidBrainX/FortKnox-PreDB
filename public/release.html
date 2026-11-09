@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FortKnox PreDB – Release</title>
+    <title>FortKnox – Release Intelligence</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -66,13 +66,65 @@
         .button:disabled { opacity: 0.5; cursor: not-allowed; }
         .error { background: #351b1b; border: 1px solid #702525; color: #ff8787; padding: 16px; border-radius: 8px; }
         .loading { color: #888; padding: 20px 0; }
+
+        /* FortKnox Metallic Neon – shared release-page identity */
+        :root { color-scheme: dark; --fk-cyan:#38d9e8; --fk-green:#8bea35; --fk-line:rgba(105,220,224,.19); --fk-muted:#91a2b5; }
+        body {
+            color:#eaf4f7;
+            background:radial-gradient(ellipse at 12% 0%,rgba(40,220,95,.12),transparent 35%),radial-gradient(ellipse at 88% 4%,rgba(22,191,225,.13),transparent 38%),linear-gradient(145deg,#070b12,#0a111c 52%,#080d16);
+            background-attachment:fixed;
+        }
+        header,.navbar {
+            background:linear-gradient(110deg,rgba(8,15,24,.98),rgba(13,25,37,.96)) !important;
+            border-bottom:1px solid rgba(56,217,232,.28) !important;
+            box-shadow:0 12px 42px rgba(0,0,0,.28),0 1px 22px rgba(38,210,198,.06);
+        }
+        header h1,.navbar-brand {
+            color:#eaf8fb !important; font-weight:800; letter-spacing:.065em; text-transform:uppercase;
+            background:linear-gradient(180deg,#fff 5%,#b4c4ce 52%,#718794 100%);
+            -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+        }
+        header span { color:#a5bbc7; letter-spacing:.14em; text-transform:uppercase; font-size:10px; }
+        main,.container { position:relative; }
+        .card,.field {
+            color:#eaf4f7 !important;
+            background:linear-gradient(145deg,rgba(20,31,45,.95),rgba(11,18,29,.97)) !important;
+            border:1px solid var(--fk-line) !important; border-radius:12px;
+            box-shadow:inset 0 1px rgba(255,255,255,.035),0 12px 30px rgba(0,0,0,.2);
+        }
+        .card { position:relative; overflow:hidden; }
+        .card::before { content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--fk-green),var(--fk-cyan),transparent); }
+        .field { background:rgba(5,13,22,.58) !important; padding:15px; }
+        .field-label,.event-meta,.loading,.release-title { color:var(--fk-muted) !important; }
+        .field-label { letter-spacing:.11em; font-size:10px; }
+        .field-value,.release-name { color:#edfaff; }
+        .release-name { font-size:clamp(20px,3vw,28px); }
+        h2,h5 { color:#eaf8fb; letter-spacing:.035em; text-transform:uppercase; }
+        .back { color:var(--fk-cyan); }
+        .event { background:rgba(5,13,22,.58); border-left-color:var(--fk-cyan); }
+        .event-type { color:var(--fk-green); }
+        .event-message { color:#d7e5ec; }
+        .button { border:1px solid transparent; }
+        .button-nuke { background:linear-gradient(135deg,#762b37,#b93b43); }
+        .button-unnuke { background:linear-gradient(135deg,#1d593e,#398b42); }
+        .form-control,.form-select { background:#0b1420 !important; border-color:rgba(124,174,190,.24) !important; color:#eaf4f7 !important; }
+        .form-control:focus,.form-select:focus { border-color:var(--fk-cyan) !important; box-shadow:0 0 0 3px rgba(56,217,232,.12) !important; }
+        .table,.table-dark { --bs-table-bg:transparent; --bs-table-color:#eaf4f7; --bs-table-border-color:rgba(105,220,224,.12); }
+        .table thead th { color:#8fa8b7; text-transform:uppercase; letter-spacing:.1em; font-size:10px; background:rgba(39,62,77,.26); }
+        .table-hover>tbody>tr:hover>* { --bs-table-accent-bg:rgba(41,207,201,.075); color:#fff; }
+        .btn-outline-secondary { color:var(--fk-cyan); border-color:rgba(56,217,232,.4); }
+        .btn-outline-secondary:hover { color:#fff; background:#15536a; border-color:var(--fk-green); }
+        .badge-movie { background:#317d39; } .badge-tv { background:#146b7c; } .badge-game { background:#6550a8; }
+        .text-info { color:var(--fk-cyan) !important; }
+        @media (max-width:600px) { main { padding-left:14px; padding-right:14px; } .card { padding:18px !important; } }
+        @media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition-duration:.01ms !important; animation-duration:.01ms !important; } }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>FortKnox PreDB</h1>
-    <span>Release Details</span>
+    <h1>FortKnox</h1>
+    <span>Release Intelligence &amp; Control Center</span>
 </header>
 
 <main>
@@ -213,5 +265,13 @@
     loadRelease();
 </script>
 
+<script>
+    // Datensparsame Tageszählung: der Server speichert nur täglich wechselnde HMAC-Kennungen.
+    if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/visits/track', new Blob([], { type: 'application/json' }));
+    } else {
+        fetch('/api/visits/track', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+    }
+</script>
 </body>
 </html>

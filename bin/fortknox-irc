@@ -10,6 +10,8 @@ use FortKnox\IRC\AnnouncementHandler;
 use FortKnox\IRC\IrcClient;
 use FortKnox\IRC\IrcProtocolParser;
 use FortKnox\IRC\IrcSession;
+use FortKnox\IRC\FiSHKeyVault;
+use FortKnox\IRC\FiSHKeyStore;
 use FortKnox\Notifications\WebhookService;
 use FortKnox\PreDB\ImportService;
 use FortKnox\PreDB\ReleaseParser;
@@ -58,7 +60,7 @@ if (!$network) {
     $username = (string) ($env['IRC_USERNAME'] ?? 'fortknox-predb');
     $realname = (string) ($env['IRC_REALNAME'] ?? 'FortKnox PreDB');
     $password = !empty($env['IRC_PASSWORD']) ? (string) $env['IRC_PASSWORD'] : null;
-    $channels = array_filter(array_map('trim', explode(',', (string) ($env['IRC_CHANNELS'] ?? '#predb'))));
+    $channels = array_values(array_filter(array_map('trim', preg_split('/[,\\r\\n]+/', (string) ($env['IRC_CHANNELS'] ?? '#predb')) ?: [])));
 } else {
     if (empty($network['is_enabled'])) {
         echo "[IRC] Network '{$network['name']}' (ID: {$networkId}) is disabled. Exiting.\n";
@@ -72,7 +74,7 @@ if (!$network) {
     $realname = (string) $network['realname'];
     $password = !empty($network['password']) ? (string) $network['password'] : null;
     $nickServPassword = !empty($network['nickserv_password']) ? (string) $network['nickserv_password'] : null;
-    $channels = array_filter(array_map('trim', explode(',', (string) $network['channels'])));
+    $channels = array_values(array_filter(array_map('trim', preg_split('/[,\\r\\n]+/', (string) $network['channels']) ?: [])));
 }
 
 $webhookUrl = (string) ($env['WEBHOOK_URL'] ?? '');
@@ -87,7 +89,7 @@ $importService = new ImportService(
     $webhookService
 );
 
-$enableAnnounce = (bool) ($row['enable_announce'] ?? 1);
+$enableAnnounce = filter_var($network['enable_announce'] ?? true, FILTER_VALIDATE_BOOLEAN);
 $announcementHandler = new AnnouncementHandler($importService, $enableAnnounce ? $webhookService : null);
 
 $protocolParser = new IrcProtocolParser();
@@ -115,6 +117,21 @@ foreach ($channels as $entry) {
 $announcementHandler->setChannelSectionMap($channelSectionMap);
 $channels = array_values(array_unique($cleanChannels));
 
+$channelKeys = [];
+$vault = new FiSHKeyVault(dirname(__DIR__));
+try {
+    $keyStmt = $pdo->prepare('SELECT channel, encrypted_key FROM irc_channel_keys WHERE network_id = ?');
+    $keyStmt->execute([$networkId]);
+    foreach ($keyStmt->fetchAll(PDO::FETCH_ASSOC) as $keyRow) {
+        $channelKeys[strtolower((string) $keyRow['channel'])] = $vault->decrypt((string) $keyRow['encrypted_key']);
+    }
+} catch (\Throwable $e) {
+    fwrite(STDERR, '[IRC] FiSH keys unavailable; encrypted messages will not be processed: ' . $e->getMessage() . PHP_EOL);
+}
+
+$fishKeyStore = $networkId === 1 ? new FiSHKeyStore($pdo, $vault, $networkId) : null;
+$fishPeerNick = trim((string) ($env['IRC_FISH_PEER_NICK'] ?? ''));
+
 $session = new IrcSession(
     $client,
     $protocolParser,
@@ -124,7 +141,12 @@ $session = new IrcSession(
     $realname,
     $channels,
     $password,
-    $nickServPassword
+    $nickServPassword,
+    'NickServ',
+    $channelKeys,
+    $fishKeyStore,
+    $fishPeerNick !== '' ? $fishPeerNick : null,
+    '#predb'
 );
 
 echo "[IRC] Starting session for '{$nick}' on {$host}:{$port}...\n";

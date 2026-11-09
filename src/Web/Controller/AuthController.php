@@ -38,6 +38,24 @@ final class AuthController
             return;
         }
 
+        // Accounts managed in the Admin panel must also be able to sign in.
+        if ($this->connection !== null && $user !== '' && $pass !== '') {
+            $stmt = $this->connection->get()->prepare(
+                'SELECT id, username, password_hash, role FROM admin_users WHERE username = ? AND is_active = 1 LIMIT 1'
+            );
+            $stmt->execute([$user]);
+            $account = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($account && password_verify($pass, (string) $account['password_hash'])) {
+                $_SESSION['admin_authenticated'] = true;
+                $_SESSION['admin_user'] = (string) $account['username'];
+                $_SESSION['admin_role'] = (string) $account['role'];
+                $this->connection->get()->prepare('UPDATE admin_users SET last_login = NOW() WHERE id = ?')
+                    ->execute([(int) $account['id']]);
+                echo json_encode(['success' => true, 'user' => $user]);
+                return;
+            }
+        }
+
         http_response_code(401);
         echo json_encode(['error' => 'Ungültige Anmeldedaten.']);
     }
@@ -114,7 +132,8 @@ final class AuthController
         }
 
         $latestBackup = 'Keins';
-        $backups = glob('/root/FortKnox-PreDB/backups/fortknox_*.sql.gz');
+        $backupPattern = dirname(__DIR__, 3) . '/storage/backups/*.{sql.gz,tar.gz,sql}';
+        $backups = glob($backupPattern, GLOB_BRACE) ?: [];
         if ($backups) {
             usort($backups, fn ($a, $b) => filemtime($b) <=> filemtime($a));
             $latestBackup = basename($backups[0]) . ' (' . round(filesize($backups[0]) / 1024 / 1024, 2) . ' MB)';

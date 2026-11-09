@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>FortKnox PreDB - Control Center</title>
+  <title>FortKnox Control Center</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root {
@@ -124,11 +124,217 @@
   }
 </style>
 
+
+  <style id="fortknox-neon-theme">
+    :root {
+      color-scheme: dark;
+      --bg: #070b12;
+      --card: rgba(15, 23, 36, .92);
+      --border: rgba(67, 220, 255, .18);
+      --text: #e6f7ff;
+      --muted: #8ba6b8;
+      --primary: #39e6d0;
+      --danger: #ff5577;
+      --success: #45e69a;
+      --warning: #ffc857;
+      --fk-cyan: #39e6d0;
+      --fk-blue: #39b8ff;
+      --fk-glow: 0 0 24px rgba(57, 230, 208, .10);
+    }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      min-height: 100vh;
+      padding: clamp(14px, 2.4vw, 30px);
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 12% 0%, rgba(0, 204, 190, .12), transparent 34%),
+        radial-gradient(ellipse at 92% 8%, rgba(40, 130, 255, .10), transparent 30%),
+        linear-gradient(145deg, #070b12 0%, #0a1220 55%, #080d16 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: .01em;
+    }
+    .container { max-width: 1500px; }
+    #adminView > .flex:first-child {
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(110deg, rgba(13, 31, 43, .96), rgba(13, 20, 34, .92));
+      box-shadow: var(--fk-glow);
+      position: relative;
+      overflow: hidden;
+    }
+    #adminView > .flex:first-child::after {
+      content: "";
+      position: absolute;
+      width: 220px; height: 220px;
+      right: -90px; top: -145px;
+      border-radius: 50%;
+      border: 1px solid rgba(57, 230, 208, .22);
+      box-shadow: 0 0 0 18px rgba(57, 230, 208, .025), 0 0 0 38px rgba(57, 230, 208, .02);
+      pointer-events: none;
+    }
+    h1, h2 { color: #dffcff; letter-spacing: .025em; }
+    h1 { font-size: clamp(1.2rem, 2vw, 1.55rem); }
+    h2 { font-size: 1.05rem; }
+    h3 { color: var(--fk-cyan) !important; letter-spacing: .035em; }
+    a { color: var(--fk-cyan) !important; }
+    .card {
+      background: linear-gradient(145deg, rgba(17, 27, 42, .96), rgba(11, 19, 31, .96));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: clamp(15px, 2vw, 22px);
+      margin-bottom: 18px;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .18);
+    }
+    .stat-box {
+      min-height: 94px;
+      padding: 16px;
+      border: 1px solid rgba(57, 184, 255, .16);
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(12, 28, 42, .96), rgba(9, 17, 29, .96));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+    .stat-box:hover {
+      transform: translateY(-2px);
+      border-color: rgba(57, 230, 208, .48);
+      box-shadow: 0 8px 26px rgba(0, 220, 190, .08);
+    }
+    .stat-label { color: #89aaba; font-size: .69rem; letter-spacing: .10em; }
+    .stat-value { color: #efffff; font-size: clamp(1.25rem, 2vw, 1.65rem); text-shadow: 0 0 18px rgba(57, 230, 208, .12); }
+    .grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 13px; }
+    .nav-tabs-bar {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 7px;
+      overflow-x: auto;
+      margin: 18px 0;
+      padding: 7px;
+      border: 1px solid rgba(57, 230, 208, .14);
+      border-radius: 13px;
+      background: rgba(7, 14, 24, .82);
+      scrollbar-width: thin;
+      scrollbar-color: #1d6570 transparent;
+    }
+    .tab-btn, .tab-btn.active {
+      flex: 0 0 auto;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      padding: 10px 13px;
+      color: #91aaba;
+      background: transparent;
+      font-size: .82rem;
+      font-weight: 650;
+      white-space: nowrap;
+      transition: all .18s ease;
+    }
+    .tab-btn:hover {
+      color: #eaffff;
+      background: rgba(57, 230, 208, .08);
+      border-color: rgba(57, 230, 208, .18);
+    }
+    .tab-btn.active {
+      color: #061513;
+      border-color: rgba(57, 230, 208, .65);
+      background: linear-gradient(100deg, #39e6d0, #65d8ff);
+      box-shadow: 0 0 20px rgba(57, 230, 208, .20);
+    }
+    input, button, select, textarea {
+      border-radius: 8px;
+      border: 1px solid rgba(112, 164, 190, .25);
+      background: #091321;
+      color: #e6f7ff;
+      font: inherit;
+      font-size: .86rem;
+    }
+    input, select, textarea { padding: 10px 12px; }
+    button { padding: 9px 13px; transition: border-color .16s, background .16s, transform .16s; }
+    button:hover { border-color: rgba(57, 230, 208, .55); background: #123044; }
+    button.primary {
+      color: #061513;
+      font-weight: 750;
+      border-color: #39e6d0;
+      background: linear-gradient(100deg, #39e6d0, #65d8ff);
+      box-shadow: 0 4px 18px rgba(57, 230, 208, .12);
+    }
+    button.primary:hover { color: #020c11; background: linear-gradient(100deg, #65f3df, #8ce2ff); }
+    button.success { color: #07170f; background: #45e69a; border-color: #45e69a; }
+    button.danger { color: #fff; background: #8e2948; border-color: #c43d63; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--fk-cyan);
+      outline-offset: 2px;
+    }
+    table { border-collapse: separate; border-spacing: 0; overflow: hidden; }
+    th { color: #8fb5c5; background: rgba(57, 184, 255, .055); letter-spacing: .06em; text-transform: uppercase; font-size: .7rem; }
+    th, td { border-bottom: 1px solid rgba(112, 164, 190, .13); padding: 11px 12px; }
+    tr:hover td { background: rgba(57, 230, 208, .035); }
+    pre, code { color: #a9f5e8; }
+    #monitorLogOutput {
+      background: #050b13 !important;
+      border-color: rgba(57, 230, 208, .20) !important;
+      border-radius: 10px !important;
+      color: #a7d8d5;
+    }
+    .tag-active { color: #71ffc0; background: rgba(26, 130, 82, .18); border-color: rgba(69, 230, 154, .38); }
+    .tag-inactive { color: #ff8da3; background: rgba(143, 41, 72, .18); border-color: rgba(255, 85, 119, .38); }
+    #loginView {
+      background: linear-gradient(145deg, rgba(17, 31, 46, .98), rgba(8, 16, 28, .98));
+      border: 1px solid rgba(57, 230, 208, .28);
+      border-radius: 18px;
+      box-shadow: 0 18px 70px rgba(0, 0, 0, .42), 0 0 35px rgba(57, 230, 208, .08);
+    }
+    #loginView h1 { text-shadow: 0 0 22px rgba(57, 230, 208, .18); }
+    .form-group label { color: #91aaba; letter-spacing: .025em; }
+    .hidden { display: none !important; }
+    @media (max-width: 720px) {
+      body { padding: 10px; }
+      #adminView > .flex:first-child { align-items: flex-start; gap: 12px; padding: 14px; }
+      #adminView > .flex:first-child > .flex { flex-wrap: wrap; justify-content: flex-end; }
+      .nav-tabs-bar { margin: 12px 0; }
+      .card { padding: 14px; border-radius: 11px; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+      .stat-box { min-height: 82px; padding: 12px; }
+      th, td { padding: 8px; font-size: .76rem; }
+    }
+    @media (max-width: 420px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .stat-value { font-size: 1.15rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+  <style id="fortknox-brand-lockup">
+    .fk-brand-lockup { display:flex; align-items:center; min-width:0; }
+    .fk-original-logo {
+      display:block;
+      width:clamp(240px,29vw,340px);
+      max-width:100%;
+      height:auto;
+      object-fit:contain;
+      /* Weiche Außenkante: Die originale Grafik bleibt unverändert, ihr dunkler Bildrand geht optisch in das Dark-UI über. */
+      -webkit-mask-image:radial-gradient(ellipse 96% 94% at 50% 50%, #000 76%, transparent 100%);
+      mask-image:radial-gradient(ellipse 96% 94% at 50% 50%, #000 76%, transparent 100%);
+      filter:drop-shadow(0 8px 22px rgba(0,220,190,.10));
+    }
+    .fk-brand-copy { min-width:0; }
+    .fk-dashboard-link { display:inline-block; margin-top:2px; color:#55e8d2 !important; font-size:.76rem; text-decoration:none; }
+    .fk-dashboard-link:hover { color:#9effdf !important; text-shadow:0 0 12px rgba(57,230,208,.45); }
+    #loginView { position:relative; overflow:hidden; }
+    #loginView .fk-login-logo { width:min(100%,300px); margin:0 auto 8px; }
+    #loginView h1 { text-align:center; }
+    @media (max-width:720px) {
+      .fk-original-logo { width:clamp(210px,56vw,300px); }
+      #loginView .fk-login-logo { width:min(100%,270px); }
+    }
+  </style>
+
 </head>
 <body>
   <div class="container">
     <div id="loginView" class="card" style="max-width: 400px; margin: 60px auto;">
-      <h1>FortKnox Admin Login</h1>
+      <img class="fk-original-logo fk-login-logo" src="/assets/fortknox-original.png" alt="FortKnox Cybersecurity Control Center">
+      <h1>Admin Login</h1>
       <form id="loginForm">
         <div style="margin-bottom: 12px;">
           <input type="text" id="username" placeholder="Benutzername" style="width: 100%;" required>
@@ -144,8 +350,12 @@
     <div id="adminView" class="hidden">
       <div class="flex" style="justify-content: space-between; margin-bottom: 20px;">
         <div>
-          <h1 style="margin: 0;">🛡️ FortKnox Control Center</h1>
-          <span style="font-size: 0.8rem; color: var(--muted);"><a href="/dashboard.html" style="color: var(--primary); text-decoration: none;">&larr; Zum Live Dashboard</a></span>
+          <div class="fk-brand-lockup">
+            <div class="fk-brand-copy">
+              <img class="fk-original-logo" src="/assets/fortknox-original.png" alt="FortKnox Cybersecurity Control Center">
+              <a class="fk-dashboard-link" href="/dashboard.html">&larr; Zum Live Dashboard</a>
+            </div>
+          </div>
         </div>
         <div class="flex">
           <span id="userDisplay" style="color: var(--muted); font-size: 0.85rem;"></span>
@@ -172,22 +382,22 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="flex" style="justify-content: space-between;">
-          <h2>
-  <!-- REITER NAVIGATION -->
-  <div class="nav-tabs-bar">
-    <button class="tab-btn active" onclick="switchView('bots', this)">🤖 IRC Bots</button>
-    <button class="tab-btn" onclick="switchView('sources', this)">🌐 Externe Quellen</button>
-    <button class="tab-btn" onclick="switchView('moderation', this)">🛡️ Release Moderation</button>
-    <button class="tab-btn" onclick="switchView('users', this)">👥 Benutzerverwaltung</button>
-    <button class="tab-btn" onclick="switchView('backups', this)">💾 Backups</button>
-    
-  </div>
+      <!-- REITER NAVIGATION -->
+      <div class="nav-tabs-bar">
+        <button class="tab-btn active" onclick="switchView('bots', this)">🤖 IRC Bots</button>
+        <button class="tab-btn" onclick="switchView('sources', this)">🌐 Externe Quellen</button>
+        <button class="tab-btn" onclick="switchView('moderation', this)">🛡️ Release Moderation</button>
+        <button class="tab-btn" onclick="switchView('users', this)">👥 Benutzerverwaltung</button>
+        <button class="tab-btn" onclick="switchView('monitor', this)">📊 Logs &amp; Statistiken</button>
+        <button class="tab-btn" onclick="switchView('backups', this)">💾 Backups</button>
+      </div>
 
-<div id="panel-bots" class="view-panel active"><div class="card-bots-inner">IRC Bots & Netzwerke</h2>
-          <button id="newBotBtn" class="primary">+ Neues Netzwerk hinzufügen</button>
-        </div>
+      <div id="panel-bots" class="view-panel active">
+        <div class="card">
+          <div class="flex" style="justify-content: space-between;">
+            <h2>🤖 IRC Bots &amp; Netzwerke</h2>
+            <button id="newBotBtn" class="primary">+ Neues Netzwerk hinzufügen</button>
+          </div>
 
         <div id="botFormContainer" class="hidden" style="background: #0d1219; border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin: 16px 0;">
           <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: var(--primary);" id="formTitle">Bot konfigurieren</h3>
@@ -237,6 +447,20 @@
                 <textarea id="botChannels" rows="3" style="width: 100%; font-family: monospace; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 8px;" placeholder="#predb&#10;#pre-mp3&#10;#pre-tv secretkey" required></textarea>
                 <small style="color: var(--muted); font-size: 0.8rem; display: block; margin-top: 4px;">Format: Ein Channel pro Zeile oder mit Komma getrennt. Optional mit Sektions-Zuweisung: <code>#pre-mp3:MP3</code>, <code>#predb-tv:TV</code>.</small>
               </div>
+                <div class="form-group" style="grid-column: span 2;">
+            <h4 style="margin:0 0 8px;">Channel-Schlüssel setzen / rotieren</h4>
+            <p style="color:var(--muted);font-size:.78rem;margin:0 0 10px;">Der Channel wird bei Bedarf automatisch zur JOIN-Liste dieses Bots hinzugefügt. Ein neuer Schlüssel ersetzt den bisherigen Eintrag.</p>
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+              <label>IRC-Channel<input id="fishKeyChannel" type="text" maxlength="128" placeholder="#predb" autocomplete="off"></label>
+              <label>Modus<select id="fishKeyMode"><option value="cbc" selected>CBC (empfohlen)</option><option value="ecb">ECB (Legacy)</option></select></label>
+              <label>Neuer FiSH-Schlüssel<input id="fishKeyValue" type="password" maxlength="56" autocomplete="new-password" placeholder="Schlüssel eingeben"></label>
+                  </div>
+            <div class="flex" style="margin-top:10px;align-items:center;flex-wrap:wrap;">
+              <button type="button" class="primary" id="fishKeySaveBtn" onclick="saveFishChannelKey()">🔐 Schlüssel verschlüsselt speichern</button>
+              <span id="fishKeySaveStatus" role="status" style="font-size:.8rem;color:var(--muted);">Noch keine Änderung vorgenommen.</span>
+            </div>
+            <p style="color:var(--muted);font-size:.72rem;margin-top:8px;">Der Schlüssel wird nicht zurückgegeben oder angezeigt. Nach dem Speichern muss der betreffende IRC-Bot neu gestartet werden, damit er den Channel betritt und den Schlüssel lädt. DH1080-Key-Exchange ist derzeit nur für Netzwerk 1 aktiviert und speichert dort den ausgehandelten Schlüssel automatisch.</p>
+          </div>
             </div>
             <div class="flex" style="margin-top: 16px; justify-content: flex-end;">
               <button type="button" id="cancelBotBtn">Abbrechen</button>
@@ -263,10 +487,6 @@
         </table>
       </div>
 
-            <div class="card">
-        <div class="flex" style="justify-content: space-between;">
-          <h2>🌐 </div></div>
-  </div>
 
     <!-- Live IRC Monitor im Bot-Panel gekapselt -->
     <div style="margin-top: 25px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
@@ -274,10 +494,11 @@
         <span>💬</span> Live IRC Monitor
       </div>
       <div style="height: 550px; width: 100%;">
-        <iframe src="https://fortknox.cloud:9000/" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
+        <iframe src="/monitor/irc-fish/" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
       </div>
     </div>
   </div>
+      </div><!-- /panel-bots -->
 
   <div id="panel-sources" class="view-panel"><div class="card-sources-inner">Externe PreDB Quellen</h2>
           <button id="newSourceBtn" class="primary">+ Neue Quelle hinzufügen</button>
@@ -891,7 +1112,7 @@ document.querySelector('[data-tab="users"]')?.addEventListener("click", () => {
 
 
 function switchView(tabKey, btn) {
-  const panels = ['bots', 'sources', 'moderation', 'users', 'backups'];
+  const panels = ['bots', 'sources', 'moderation', 'users', 'monitor', 'backups'];
   panels.forEach(k => {
     const el = document.getElementById('panel-' + k);
     if (el) {
@@ -907,6 +1128,9 @@ function switchView(tabKey, btn) {
     fetchUsersList();
   } else if (tabKey === 'backups') {
     fetchBackupsList();
+  } else if (tabKey === 'monitor') {
+    window.loadMonitorStats?.();
+    window.loadMonitorLogs?.();
   }
 }
 
@@ -914,16 +1138,67 @@ function switchView(tabKey, btn) {
 </script>
 
 
+  <!-- PANEL: LOGS & STATISTIKEN -->
+  <div id="panel-monitor" class="view-panel">
+    <div class="card">
+      <div class="flex" style="justify-content:space-between; flex-wrap:wrap;">
+        <div><h2>📊 Logs &amp; Statistiken</h2><p style="color:var(--muted);font-size:.82rem;">Live-nahe Betriebsübersicht, IRC-Protokolle und Datenbank-Aktivität.</p></div>
+        <button class="primary" id="monitorRefreshBtn">↻ Aktualisieren</button>
+      </div>
+      <div class="grid" style="margin-top:16px;">
+        <div class="stat-box"><div class="stat-label">Besucher heute</div><div class="stat-value" id="monVisitorsToday">–</div></div>
+        <div class="stat-box"><div class="stat-label">Releases gesamt</div><div class="stat-value" id="monReleasesTotal">–</div></div>
+        <div class="stat-box"><div class="stat-label">Releases heute</div><div class="stat-value" id="monReleasesToday">–</div></div>
+        <div class="stat-box"><div class="stat-label">Releases (7 Tage)</div><div class="stat-value" id="monReleases7d">–</div></div>
+        <div class="stat-box"><div class="stat-label">DB-Größe</div><div class="stat-value" id="monDbSize">–</div></div>
+        <div class="stat-box"><div class="stat-label">Outbox ausstehend</div><div class="stat-value" id="monOutboxPending">–</div></div>
+        <div class="stat-box"><div class="stat-label">Outbox fehlgeschlagen</div><div class="stat-value" id="monOutboxFailed">–</div></div>
+        <div class="stat-box"><div class="stat-label">Quellen aktiv</div><div class="stat-value" id="monSources">–</div></div>
+        <div class="stat-box"><div class="stat-label">Quellen mit Fehlern</div><div class="stat-value" id="monSourceIssues">–</div></div>
+        <div class="stat-box"><div class="stat-label">Events (24 Stunden)</div><div class="stat-value" id="monEvents24h">–</div></div>
+      </div>
+      <h3 style="color:var(--primary);margin-top:18px;">IRC-Netzwerke</h3>
+      <div id="monitorNetworks" style="color:var(--muted);font-size:.85rem;">Lade Status …</div>
+      <div class="card" style="margin-top:16px;background:rgba(4,18,28,.72);">
+        <div class="flex" style="justify-content:space-between;flex-wrap:wrap;">
+          <div><h3 style="margin:0 0 5px;">🔐 FiSH-10 / DH1080</h3><p style="color:var(--muted);font-size:.78rem;">Verschlüsselungsstatus je IRC-Netzwerk und Channel – geheime Schlüssel werden niemals angezeigt.</p></div>
+          <span id="fishPanelStatus" class="tag tag-inactive">Status wird geladen</span>
+        </div>
+        <div id="fishNetworkStatus" style="margin-top:12px;color:var(--muted);font-size:.85rem;">FiSH-Status wird geladen …</div>
+        <div id="fishExchangeStatus" style="margin-top:12px;font-size:.82rem;color:var(--muted);">DH1080-Schlüsselaustausch: –</div>
+        <div id="fishErrorStatus" style="margin-top:6px;font-size:.8rem;color:var(--muted);">Letzter FiSH-Fehler: –</div>
+        <p style="margin-top:10px;color:var(--muted);font-size:.72rem;">Hinweis: „Schlüssel hinterlegt“ bestätigt den gespeicherten verschlüsselten Schlüssel, nicht die aktuelle Ende-zu-Ende-Erreichbarkeit des Peers.</p>
+      </div>
+      <h3 style="color:var(--primary);margin-top:18px;">Release-Aktivität – letzte 7 Tage</h3>
+      <div id="monitorDaily" style="color:var(--muted);font-size:.85rem;">Lade Statistik …</div>
+      <h3 style="color:var(--primary);margin-top:18px;">Eindeutige Besucher – letzte 30 Tage</h3>
+      <div id="monitorVisitorsDaily" style="color:var(--muted);font-size:.85rem;">Lade Besucherstatistik …</div>
+      <p style="color:var(--muted);font-size:.75rem;margin-top:8px;">Tageswerte, pro Browser/Netzwerk-Kombination einmal gezählt. Kennungen werden täglich wechselnd pseudonymisiert; keine Klartext-IP wird gespeichert.</p>
+    </div>
+    <div class="card">
+      <div class="flex" style="justify-content:space-between;flex-wrap:wrap;">
+        <h2>🧾 IRC-Bot-Logs</h2>
+        <div class="flex"><select id="monitorNetwork"><option value="all">Alle Netzwerke</option></select><select id="monitorLines"><option value="100">100 Zeilen</option><option value="200" selected>200 Zeilen</option><option value="500">500 Zeilen</option><option value="50">50 Zeilen</option></select><button id="monitorLogsRefresh">Logs laden</button></div>
+      </div>
+      <p id="monitorLogInfo" style="color:var(--muted);font-size:.8rem;margin:8px 0;">Die Protokollierung beginnt ab Aktivierung dieser Funktion.</p>
+      <pre id="monitorLogOutput" style="white-space:pre-wrap;overflow:auto;max-height:520px;background:#080c12;border:1px solid var(--border);padding:14px;border-radius:6px;font-size:.78rem;line-height:1.5;">Noch keine Logs geladen.</pre>
+    </div>
+    <div class="card">
+      <h2>Letzte Release-Ereignisse</h2>
+      <div style="overflow:auto;"><table><thead><tr><th>Zeit</th><th>Typ</th><th>Quelle</th><th>Meldung</th></tr></thead><tbody id="monitorEvents"><tr><td colspan="4">Noch keine Daten geladen.</td></tr></tbody></table></div>
+    </div>
+  </div>
+
   <!-- PANEL: BACKUPS -->
   <div id="panel-backups" class="admin-panel">
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
-          <h2 style="margin: 0; font-size: 1.15rem; color:#f8fafc;">💾 Backup & Wiederherstellung</h2>
-          <p style="margin:4px 0 0 0; color:#94a3b8; font-size:0.85rem;">Sichere Systemeinstellungen, Accounts oder erstelle komplette Datenbank-Dumps.</p>
+          <h2 style="margin: 0; font-size: 1.15rem; color:#f8fafc;">💾 Backup-Verwaltung</h2>
+          <p style="margin:4px 0 0 0; color:#94a3b8; font-size:0.85rem;">Sichere Admin-, IRC- und Quelleneinstellungen oder erstelle einen vollständigen Datenbank-Dump.</p>
         </div>
         <div style="display:flex; gap:10px;">
-          <button id="btnConfigBackup" class="primary" style="background:#0284c7; border:none; padding:8px 14px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">⚡ System & Config Backup (Schnell)</button>
+          <button id="btnConfigBackup" class="primary" style="background:#0284c7; border:none; padding:8px 14px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">⚡ Konfigurations-DB-Backup</button>
           <button id="btnFullBackup" class="primary" style="background:#059669; border:none; padding:8px 14px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">📦 Vollständiger DB-Dump (Hintergrund)</button>
         </div>
       </div>
@@ -1016,7 +1291,7 @@ function switchView(tabKey, btn) {
 <script>
 
 function switchView(tabKey, btn) {
-  const panels = ['bots', 'sources', 'moderation', 'users', 'backups'];
+  const panels = ['bots', 'sources', 'moderation', 'users', 'monitor', 'backups'];
   panels.forEach(k => {
     const el = document.getElementById('panel-' + k);
     if (el) {
@@ -1032,6 +1307,9 @@ function switchView(tabKey, btn) {
     fetchUsersList();
   } else if (tabKey === 'backups') {
     fetchBackupsList();
+  } else if (tabKey === 'monitor') {
+    window.loadMonitorStats?.();
+    window.loadMonitorLogs?.();
   }
 }
 
@@ -1148,8 +1426,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-</html>
-
 <script>
 async function fetchBackupsList() {
     const tbody = document.getElementById("backupsTableBody");
@@ -1208,4 +1484,201 @@ async function deleteBackup(filename) {
         alert("Netzwerkfehler beim Löschen.");
     }
 }
-</script></body>
+
+</script>
+<script>
+(function () {
+  function normalizeAdminPanels() {
+    const root = document.getElementById('adminView');
+    if (!root) return;
+    const nav = document.querySelector('.nav-tabs-bar');
+    const keys = ['bots', 'sources', 'moderation', 'users', 'monitor', 'backups'];
+    const shell = nav ? nav.closest('.card') : null;
+    if (nav) {
+      const grid = root.querySelector(':scope > .grid');
+      if (grid && grid.parentNode === root) root.insertBefore(nav, grid.nextSibling);
+      else root.appendChild(nav);
+    }
+    keys.forEach(function (key) {
+      const panel = document.getElementById('panel-' + key);
+      if (panel && panel.parentNode !== root) root.appendChild(panel);
+    });
+    if (shell && !shell.querySelector('#panel-bots') && !shell.querySelector('.nav-tabs-bar')) shell.remove();
+    window.switchView('bots', document.querySelector('.tab-btn[onclick*="bots"]'));
+  }
+
+  window.switchView = function (tabKey, btn) {
+    ['bots', 'sources', 'moderation', 'users', 'monitor', 'backups'].forEach(function (key) {
+      const panel = document.getElementById('panel-' + key);
+      if (panel) panel.classList.toggle('active', key === tabKey);
+    });
+    document.querySelectorAll('.tab-btn').forEach(function (button) {
+      button.classList.toggle('active', button === btn);
+    });
+    if (tabKey === 'users') {
+      if (typeof window.fetchUsersList === 'function') window.fetchUsersList();
+      else if (typeof window.loadUsers === 'function') window.loadUsers();
+    }
+    if (tabKey === 'monitor') { window.loadMonitorStats(); window.loadMonitorLogs(); }
+    if (tabKey === 'backups' && typeof window.fetchBackupsList === 'function') window.fetchBackupsList();
+  };
+
+  async function runBackup(endpoint, successText) {
+    const alertBox = document.getElementById('backupAlert');
+    const show = function (message, ok) {
+      if (!alertBox) return;
+      alertBox.textContent = message;
+      alertBox.classList.remove('hidden');
+      alertBox.style.background = ok ? 'rgba(22,163,74,.15)' : 'rgba(220,38,38,.15)';
+      alertBox.style.color = ok ? '#86efac' : '#fca5a5';
+    };
+    try {
+      const response = await fetch(endpoint, { method: 'POST', headers: { 'Accept': 'application/json' } });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Backup konnte nicht gestartet werden.');
+      show(data.message || successText || 'Backup wurde erstellt.', true);
+      if (typeof window.fetchBackupsList === 'function') window.fetchBackupsList();
+    } catch (error) {
+      show(error.message || 'Netzwerkfehler beim Backup.', false);
+    }
+  }
+
+  window.loadMonitorStats = async function () {
+    const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    try {
+      const response = await fetch('/api/admin/monitor/stats', { headers: { 'Accept': 'application/json' } });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const d = await response.json();
+      const fmt = n => Number(n || 0).toLocaleString('de-DE');
+      set('monVisitorsToday', fmt(d.visitors_today));
+      set('monReleasesTotal', fmt(d.releases_total)); set('monReleasesToday', fmt(d.releases_today));
+      set('monReleases7d', fmt(d.releases_7d)); set('monDbSize', fmt(d.db_size_mb) + ' MB');
+      set('monOutboxPending', fmt(d.outbox?.pending)); set('monOutboxFailed', fmt(d.outbox?.failed));
+      set('monSources', fmt(d.sources?.enabled) + ' / ' + fmt(d.sources?.total)); set('monSourceIssues', fmt(d.sources?.with_issues)); set('monEvents24h', fmt(d.events_24h));
+      const networkBox = document.getElementById('monitorNetworks');
+      networkBox.textContent = (d.networks || []).map(n => `${n.name} (#${n.id}): ${n.service_status === 'active' ? 'ONLINE' : 'OFFLINE'}${Number(n.is_enabled) ? '' : ' (deaktiviert)'}`).join(' · ') || 'Keine Netzwerke konfiguriert.';
+      const fish = d.fish || {};
+      const fishBadge = document.getElementById('fishPanelStatus');
+      const fishBox = document.getElementById('fishNetworkStatus');
+      if (!fish.available) {
+        fishBadge.textContent = 'Nicht verfügbar';
+        fishBadge.className = 'tag tag-inactive';
+        fishBox.textContent = 'FiSH-Status nicht verfügbar. Prüfe, ob die Datenbankmigration 006 vorhanden ist.';
+      } else {
+        const fishRows = (fish.networks || []).map(n => {
+          const channels = (n.channels || []).map(c => `${c.channel}: ${c.key_configured ? 'Schlüssel hinterlegt (' + c.mode + ')' : 'kein Schlüssel'}${c.updated_at ? ' · aktualisiert ' + c.updated_at : ''}`).join(' | ');
+          return `${n.network} (#${n.network_id}) – ${n.supported ? 'FiSH-Unterstützung aktiv' : 'keine FiSH-Integration'}: ${channels || 'keine Channel-Schlüssel hinterlegt'}`;
+        });
+        fishBox.textContent = fishRows.join('\n') || 'Keine IRC-Netzwerke vorhanden.';
+        const hasKey = (fish.networks || []).some(n => (n.channels || []).some(c => c.key_configured));
+        fishBadge.textContent = hasKey ? 'Schlüssel vorhanden' : 'Kein Schlüssel';
+        fishBadge.className = hasKey ? 'tag tag-active' : 'tag tag-inactive';
+      }
+      const exchange = document.getElementById('fishExchangeStatus');
+      exchange.textContent = fish.last_exchange
+        ? `Letzter DH1080-Austausch (aus IRC-Log): ${fish.last_exchange.channel} mit ${fish.last_exchange.peer}`
+        : 'DH1080-Schlüsselaustausch: kein Eintrag im aktuellen Log gefunden.';
+      const fishError = document.getElementById('fishErrorStatus');
+      fishError.textContent = fish.last_error ? `Letzter FiSH-Fehler: ${fish.last_error}` : 'Letzter FiSH-Fehler: keiner im ausgewerteten Log-Ausschnitt.';
+      const daily = document.getElementById('monitorDaily');
+      daily.textContent = (d.releases_by_day || []).map(x => `${x.day}: ${fmt(x.amount)}`).join('  |  ') || 'Keine Releases im Zeitraum.';
+      const visitorDaily = document.getElementById('monitorVisitorsDaily');
+      visitorDaily.textContent = (d.visitors_by_day || []).map(x => `${x.day}: ${fmt(x.amount)}`).join('  |  ') || 'Noch keine Besucherwerte vorhanden.';
+    } catch (e) { set('monitorNetworks', 'Statistiken konnten nicht geladen werden: ' + e.message); }
+  };
+
+  window.saveFishChannelKey = async function () {
+    const channelEl = document.getElementById('fishKeyChannel');
+    const modeEl = document.getElementById('fishKeyMode');
+    const keyEl = document.getElementById('fishKeyValue');
+    const button = document.getElementById('fishKeySaveBtn');
+    const status = document.getElementById('fishKeySaveStatus');
+    const channel = channelEl?.value.trim() || '';
+    const key = keyEl?.value || '';
+    const mode = modeEl?.value || 'cbc';
+    const networkId = Number(document.getElementById('botId')?.value || 0);
+    if (!networkId) {
+      status.textContent = 'Bitte zuerst das Netzwerk speichern und anschließend bearbeiten, um FiSH-Schlüssel zu verwalten.';
+      status.style.color = '#fca5a5';
+      return;
+    }
+    if (!channel || !key) {
+      status.textContent = 'Bitte Channel und Schlüssel eingeben.';
+      status.style.color = '#fca5a5';
+      return;
+    }
+    if (!window.confirm('Den FiSH-Schlüssel für ' + channel + ' wirklich setzen bzw. ersetzen?')) return;
+    button.disabled = true;
+    status.textContent = 'Schlüssel wird verschlüsselt gespeichert …';
+    status.style.color = 'var(--muted)';
+    try {
+      const response = await fetch('/api/admin/monitor/fish-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ network_id: networkId, channel, mode, key })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Speichern fehlgeschlagen.');
+      keyEl.value = '';
+      const channelList = document.getElementById('botChannels');
+      if (channelList) {
+        const existing = channelList.value.split(/[\r\n,]+/).map(x => x.trim().split(':', 1)[0].toLowerCase());
+        if (!existing.includes(channel.toLowerCase())) channelList.value = (channelList.value.trim() ? channelList.value.trim() + '\n' : '') + channel;
+      }
+      status.textContent = data.message || 'Schlüssel gespeichert.';
+      status.style.color = '#86efac';
+      if (typeof window.loadMonitorStats === 'function') await window.loadMonitorStats();
+      await loadBots();
+    } catch (error) {
+      status.textContent = error.message || 'Schlüssel konnte nicht gespeichert werden.';
+      status.style.color = '#fca5a5';
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  window.loadMonitorLogs = async function () {
+    const output = document.getElementById('monitorLogOutput');
+    if (!output) return;
+    const network = document.getElementById('monitorNetwork')?.value || 'all';
+    const lines = document.getElementById('monitorLines')?.value || '200';
+    output.textContent = 'Logs werden geladen …';
+    try {
+      const response = await fetch(`/api/admin/monitor/logs?network_id=${encodeURIComponent(network)}&lines=${encodeURIComponent(lines)}`, { headers: { 'Accept': 'application/json' } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'HTTP ' + response.status);
+      const selector = document.getElementById('monitorNetwork');
+      const previous = selector.value;
+      selector.replaceChildren(new Option('Alle Netzwerke', 'all'));
+      (data.networks || []).forEach(n => selector.add(new Option(`${n.name} (#${n.id})`, n.id)));
+      selector.value = previous === 'all' || (data.networks || []).some(n => String(n.id) === previous) ? previous : 'all';
+      output.textContent = (data.logs || []).map(x => `[${x.network} #${x.network_id}] ${x.line}`).join('\n') || 'Noch keine IRC-Logzeilen vorhanden. Neue Einträge erscheinen ab Aktivierung der Protokollierung.';
+      document.getElementById('monitorLogInfo').textContent = `${data.logs?.length || 0} Zeilen geladen. Zugangsdaten werden vor der Ausgabe maskiert.`;
+      const body = document.getElementById('monitorEvents');
+      body.replaceChildren();
+      (data.events || []).forEach(event => {
+        const tr = document.createElement('tr');
+        [event.created_at, event.event_type, event.source, event.message].forEach(value => { const td = document.createElement('td'); td.textContent = value || '–'; tr.appendChild(td); });
+        body.appendChild(tr);
+      });
+      if (!body.children.length) body.innerHTML = '<tr><td colspan="4">Keine Ereignisse vorhanden.</td></tr>';
+    } catch (e) { output.textContent = 'Fehler beim Laden der Logs: ' + e.message; }
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    normalizeAdminPanels();
+    document.getElementById('monitorRefreshBtn')?.addEventListener('click', function () { window.loadMonitorStats(); window.loadMonitorLogs(); });
+    document.getElementById('monitorLogsRefresh')?.addEventListener('click', window.loadMonitorLogs);
+    document.getElementById('monitorNetwork')?.addEventListener('change', window.loadMonitorLogs);
+    document.getElementById('monitorLines')?.addEventListener('change', window.loadMonitorLogs);
+    document.getElementById('btnConfigBackup')?.addEventListener('click', function () {
+      runBackup('/api/admin/backups/config', 'System- und Konfigurationsbackup erstellt.');
+    });
+    document.getElementById('btnFullBackup')?.addEventListener('click', function () {
+      runBackup('/api/admin/backups/full', 'Vollständiger Datenbank-Dump wurde gestartet.');
+    });
+  });
+})();
+</script>
+</body>
+</html>

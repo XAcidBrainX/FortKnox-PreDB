@@ -1,0 +1,4 @@
+# Allow the FortKnox admin panel (PHP-FPM, www-data) to manage The Lounge users
+# through a single narrow helper. The helper is the only permitted command and
+# runs as the `thelounge` user.
+www-data ALL=(thelounge) NOPASSWD: /usr/local/bin/fortknox-lounge-userctl

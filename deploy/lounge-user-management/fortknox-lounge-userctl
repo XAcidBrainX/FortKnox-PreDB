@@ -1,0 +1,266 @@
+#!/usr/bin/node
+'use strict';
+
+/**
+ * Narrow privileged helper for FortKnox admin panel.
+ *
+ * Runs as the `thelounge` system user (via sudoers) and only exposes the
+ * fixed operations needed by the admin UI. Passwords are read from stdin so
+ * they never show up in the process list.
+ *
+ * THELOUNGE_HOME is fixed on purpose: the admin panel manages the FiSH
+ * monitor instance, not the legacy installation.
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const HOME = '/var/lib/fortknox-fish-lounge-test';
+const USERS_DIR = path.join(HOME, 'users');
+const BCRYPT_PATH = '/opt/fortknox-fish-lounge/staging/thelounge/node_modules/bcryptjs';
+const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{1,31}$/;
+const BCRYPT_ROUNDS = 11;
+
+function fail(message, code) {
+  process.stdout.write(JSON.stringify({ success: false, error: message }));
+  process.exitCode = typeof code === 'number' ? code : 1;
+}
+
+function ok(payload) {
+  process.stdout.write(JSON.stringify(Object.assign({ success: true }, payload || {})));
+}
+
+function readStdin() {
+  return new Promise(function (resolve, reject) {
+    const chunks = [];
+    let size = 0;
+    process.stdin.on('data', function (chunk) {
+      size += chunk.length;
+      if (size > 4096) {
+        reject(new Error('Eingabe zu lang.'));
+        process.stdin.pause();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    process.stdin.on('end', function () {
+      resolve(Buffer.concat(chunks).toString('utf8'));
+    });
+    process.stdin.on('error', reject);
+  });
+}
+
+function validateName(name) {
+  return typeof name === 'string' && NAME_RE.test(name);
+}
+
+function validatePassword(password) {
+  if (typeof password !== 'string') {
+    return 'Passwort fehlt.';
+  }
+  if (password.includes('\u0000')) {
+    return 'Passwort enthält ungültige Zeichen.';
+  }
+  if (password.length < 8) {
+    return 'Das Passwort muss mindestens 8 Zeichen lang sein.';
+  }
+  if (password.length > 200) {
+    return 'Das Passwort darf höchstens 200 Zeichen lang sein.';
+  }
+  return null;
+}
+
+function listUserFiles() {
+  if (!fs.existsSync(USERS_DIR)) {
+    return [];
+  }
+  return fs
+    .readdirSync(USERS_DIR)
+    .filter(function (file) { return file.endsWith('.json'); })
+    .map(function (file) { return file.slice(0, -5); });
+}
+
+function resolveUserPath(name) {
+  const exact = path.join(USERS_DIR, name + '.json');
+  if (fs.existsSync(exact)) {
+    return exact;
+  }
+  const wanted = (name + '.json').toLowerCase();
+  const match = fs.readdirSync(USERS_DIR).find(function (file) {
+    return file.toLowerCase() === wanted;
+  });
+  return match ? path.join(USERS_DIR, match) : null;
+}
+
+function atomicWrite(file, content) {
+  const tmp = file + '.tmp-' + process.pid + '-' + Date.now();
+  const fd = fs.openSync(tmp, 'wx', 0o600);
+  try {
+    fs.writeFileSync(fd, content, 'utf8');
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  try {
+    fs.renameSync(tmp, file);
+    fs.chmodSync(file, 0o600);
+  } catch (error) {
+    try { fs.unlinkSync(tmp); } catch (_) { /* ignore */ }
+    throw error;
+  }
+}
+
+function hashPassword(password) {
+  // bcryptjs is the exact library used by The Lounge (11 rounds, $2b$).
+  const bcrypt = require(BCRYPT_PATH);
+  return bcrypt.hashSync(password, bcrypt.genSaltSync(BCRYPT_ROUNDS));
+}
+
+function listUsers() {
+  const users = listUserFiles().map(function (name) {
+    const file = path.join(USERS_DIR, name + '.json');
+    let stat = null;
+    try { stat = fs.statSync(file); } catch (_) { /* ignore */ }
+
+    let data = null;
+    try {
+      data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (error) {
+      return {
+        name: name,
+        valid: false,
+        error: 'Datei konnte nicht gelesen werden.',
+        networks: 0,
+        channels: 0,
+        sessions: 0,
+        log: false,
+        last_activity: null,
+        modified: stat ? stat.mtime.toISOString() : null,
+        size: stat ? stat.size : 0,
+      };
+    }
+
+    const networks = Array.isArray(data.networks) ? data.networks : [];
+    let channels = 0;
+    networks.forEach(function (network) {
+      (Array.isArray(network.channels) ? network.channels : []).forEach(function (channel) {
+        if (channel && typeof channel.name === 'string' && /^[#&]/.test(channel.name)) {
+          channels += 1;
+        }
+      });
+    });
+
+    const sessions = data.sessions && typeof data.sessions === 'object' ? data.sessions : {};
+    let lastUse = 0;
+    Object.keys(sessions).forEach(function (token) {
+      const value = Number(sessions[token] && sessions[token].lastUse);
+      if (Number.isFinite(value) && value > lastUse) {
+        lastUse = value;
+      }
+    });
+
+    return {
+      name: name,
+      valid: true,
+      networks: networks.length,
+      channels: channels,
+      sessions: Object.keys(sessions).length,
+      log: Boolean(data.log),
+      last_activity: lastUse > 0 ? new Date(lastUse).toISOString() : null,
+      modified: stat ? stat.mtime.toISOString() : null,
+      size: stat ? stat.size : 0,
+    };
+  });
+
+  users.sort(function (a, b) {
+    return a.name.localeCompare(b.name, 'de', { sensitivity: 'base' });
+  });
+  return users;
+}
+
+async function main() {
+  const command = process.argv[2] || '';
+  const name = process.argv[3] || '';
+
+  if (!fs.existsSync(USERS_DIR)) {
+    fail('Lounge-Benutzerverzeichnis nicht gefunden.', 5);
+    return;
+  }
+
+  if (command === 'list') {
+    ok({ users: listUsers() });
+    return;
+  }
+
+  if (!validateName(name)) {
+    fail('Ungültiger Benutzername. Erlaubt: 2-32 Zeichen, Buchstaben/Ziffern sowie _ . -', 2);
+    return;
+  }
+
+  if (command === 'add') {
+    const existing = listUserFiles().some(function (file) {
+      return file.toLowerCase() === name.toLowerCase();
+    });
+    if (existing) {
+      fail('Ein Benutzer mit diesem Namen existiert bereits.', 4);
+      return;
+    }
+
+    const password = await readStdin();
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      fail(passwordError, 2);
+      return;
+    }
+
+    const saveLogs = process.argv[4] !== '0';
+    const file = path.join(USERS_DIR, name + '.json');
+    const user = {
+      password: hashPassword(password),
+      log: saveLogs,
+    };
+    atomicWrite(file, JSON.stringify(user, null, '\t'));
+    ok({ name: name, message: 'Benutzer wurde angelegt.' });
+    return;
+  }
+
+  const file = resolveUserPath(name);
+  if (!file) {
+    fail('Benutzer nicht gefunden.', 3);
+    return;
+  }
+
+  if (command === 'reset') {
+    const password = await readStdin();
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      fail(passwordError, 2);
+      return;
+    }
+
+    let user;
+    try {
+      user = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (_) {
+      fail('Benutzerdatei ist beschädigt und kann nicht zurückgesetzt werden.', 6);
+      return;
+    }
+    user.password = hashPassword(password);
+    user.sessions = {};
+    atomicWrite(file, JSON.stringify(user, null, '\t'));
+    ok({ name: name, message: 'Passwort wurde zurückgesetzt und alle Sitzungen wurden beendet.' });
+    return;
+  }
+
+  if (command === 'remove') {
+    fs.unlinkSync(file);
+    ok({ name: name, message: 'Benutzer wurde gelöscht.' });
+    return;
+  }
+
+  fail('Unbekannter Befehl.', 2);
+}
+
+main().catch(function (error) {
+  fail('Interner Fehler: ' + (error && error.message ? error.message : 'unbekannt'), 1);
+});

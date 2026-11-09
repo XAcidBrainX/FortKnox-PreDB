@@ -10,6 +10,7 @@ use FortKnox\Web\Controller\DashboardController;
 use FortKnox\Web\Controller\ReleaseController;
 use FortKnox\Web\Controller\BackupController;
 use FortKnox\Web\Controller\MonitorController;
+use FortKnox\Web\Controller\LoungeUserController;
 use FortKnox\Web\Router;
 
 $envFile = dirname(__DIR__) . '/.env';
@@ -40,6 +41,7 @@ $connection = new Connection([
 $releaseController = new ReleaseController($connection);
 $backupController = new BackupController($connection, $env);
 $monitorController = new MonitorController($connection, dirname(__DIR__) . '/storage/logs');
+$loungeUserController = new LoungeUserController();
 $dashboardController = new DashboardController($connection);
 $authController = new AuthController(
     (string) ($env['ADMIN_USER'] ?? 'admin'),
@@ -146,6 +148,12 @@ $router->post('/api/releases/{id}/nuke', $requireAuth(fn (string $id) => $releas
 $router->post('/api/releases/{id}/unnuke', $requireAuth(fn (string $id) => $releaseController->unnuke((int) $id)));
 $router->post('/api/releases/{id}/dupe', $requireAuth(fn (string $id) => $releaseController->dupe((int) $id)));
 
+
+// The Lounge user management (FiSH monitor instance)
+$router->get('/api/admin/lounge/users', $requireAuth(fn() => $loungeUserController->index()));
+$router->post('/api/admin/lounge/users', $requireAuth(fn() => $loungeUserController->create()));
+$router->post('/api/admin/lounge/users/{name}/reset', $requireAuth(fn (string $name) => $loungeUserController->reset($name)));
+$router->post('/api/admin/lounge/users/{name}/delete', $requireAuth(fn (string $name) => $loungeUserController->delete($name)));
 
 // Admin Backups API
 $router->get('/api/admin/backups', $requireAuth(fn() => $backupController->listBackups()));

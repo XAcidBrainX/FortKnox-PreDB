@@ -91,6 +91,7 @@
 <style id="fk-tab-system">
   .nav-tabs-bar {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin: 18px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -388,6 +389,7 @@
         <button class="tab-btn" onclick="switchView('sources', this)">🌐 Externe Quellen</button>
         <button class="tab-btn" onclick="switchView('moderation', this)">🛡️ Release Moderation</button>
         <button class="tab-btn" onclick="switchView('users', this)">👥 Benutzerverwaltung</button>
+        <button class="tab-btn" onclick="switchView('lounge', this)">💬 The Lounge</button>
         <button class="tab-btn" onclick="switchView('monitor', this)">📊 Logs &amp; Statistiken</button>
         <button class="tab-btn" onclick="switchView('backups', this)">💾 Backups</button>
       </div>
@@ -1112,7 +1114,7 @@ document.querySelector('[data-tab="users"]')?.addEventListener("click", () => {
 
 
 function switchView(tabKey, btn) {
-  const panels = ['bots', 'sources', 'moderation', 'users', 'monitor', 'backups'];
+  const panels = ['bots', 'sources', 'moderation', 'users', 'lounge', 'monitor', 'backups'];
   panels.forEach(k => {
     const el = document.getElementById('panel-' + k);
     if (el) {
@@ -1126,6 +1128,8 @@ function switchView(tabKey, btn) {
 
   if (tabKey === 'users') {
     fetchUsersList();
+  } else if (tabKey === 'lounge') {
+    window.fetchLoungeUsers?.();
   } else if (tabKey === 'backups') {
     fetchBackupsList();
   } else if (tabKey === 'monitor') {
@@ -1288,10 +1292,96 @@ function switchView(tabKey, btn) {
   </div>
 </div>
 
+<!-- PANEL: THE LOUNGE BENUTZER -->
+<div id="panel-lounge" class="admin-panel">
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+      <div>
+        <h2 style="margin:0; font-size:1.15rem; color:#f8fafc;">💬 The-Lounge-Benutzer</h2>
+        <p style="margin:4px 0 0 0; color:#94a3b8; font-size:0.85rem;">Zugänge für den FiSH-IRC-Monitor. Diese Benutzer sind unabhängig von den IRC-Nicknames und vom Admin-Panel.</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span id="loungeServiceStatus" style="font-size:0.8rem; font-weight:600; padding:4px 10px; border-radius:999px; background:rgba(100,116,139,.2); color:#94a3b8;">Dienst: –</span>
+        <button id="loungeRefreshBtn" type="button" style="background:#334155; border:none; padding:8px 12px; border-radius:4px; color:#f8fafc; cursor:pointer; font-size:0.85rem;">↻ Aktualisieren</button>
+      </div>
+    </div>
+
+    <div id="loungeAlert" class="hidden" style="padding:12px; margin-bottom:16px; border-radius:6px; font-size:0.85rem;"></div>
+
+    <div style="background:#0f172a; border:1px solid #1e293b; border-radius:6px; padding:16px; margin-bottom:20px;">
+      <h3 style="font-size:0.95rem; margin-top:0; margin-bottom:12px; color:#38bdf8;">Neuen Benutzer anlegen</h3>
+      <form id="loungeCreateForm" autocomplete="off">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:12px;">
+          <div>
+            <label for="loungeNewName" style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:4px;">Benutzername</label>
+            <input id="loungeNewName" type="text" required minlength="2" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9_.-]{1,31}" autocomplete="off" spellcheck="false" style="width:100%; box-sizing:border-box; padding:8px; background:#020617; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+          </div>
+          <div>
+            <label for="loungeNewPass" style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:4px;">Passwort</label>
+            <input id="loungeNewPass" type="password" required minlength="8" maxlength="200" autocomplete="new-password" style="width:100%; box-sizing:border-box; padding:8px; background:#020617; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+          </div>
+          <div>
+            <label for="loungeNewPass2" style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:4px;">Passwort wiederholen</label>
+            <input id="loungeNewPass2" type="password" required minlength="8" maxlength="200" autocomplete="new-password" style="width:100%; box-sizing:border-box; padding:8px; background:#020617; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:22px;">
+            <input type="checkbox" id="loungeNewLogs" checked style="width:18px; height:18px; cursor:pointer;">
+            <label for="loungeNewLogs" style="color:#f8fafc; cursor:pointer; font-size:0.85rem;">Chatverläufe speichern</label>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+          <button type="submit" style="background:#0284c7; border:none; padding:8px 16px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">+ Benutzer anlegen</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="loungeResetBox" class="hidden" style="background:#0f172a; border:1px solid #1e293b; border-radius:6px; padding:16px; margin-bottom:20px;">
+      <h3 style="font-size:0.95rem; margin-top:0; margin-bottom:12px; color:#38bdf8;">Passwort zurücksetzen: <span id="loungeResetName"></span></h3>
+      <form id="loungeResetForm" autocomplete="off">
+        <input type="hidden" id="loungeResetUser">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:12px;">
+          <div>
+            <label for="loungeResetPass" style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:4px;">Neues Passwort</label>
+            <input id="loungeResetPass" type="password" required minlength="8" maxlength="200" autocomplete="new-password" style="width:100%; box-sizing:border-box; padding:8px; background:#020617; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+          </div>
+          <div>
+            <label for="loungeResetPass2" style="display:block; font-size:0.8rem; color:#94a3b8; margin-bottom:4px;">Passwort wiederholen</label>
+            <input id="loungeResetPass2" type="password" required minlength="8" maxlength="200" autocomplete="new-password" style="width:100%; box-sizing:border-box; padding:8px; background:#020617; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+          <button type="button" id="loungeResetCancel" style="background:#334155; border:none; padding:6px 12px; border-radius:4px; color:#f8fafc; cursor:pointer;">Abbrechen</button>
+          <button type="submit" style="background:#0284c7; border:none; padding:6px 14px; border-radius:4px; color:#fff; cursor:pointer; font-weight:600;">Passwort speichern</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="table-responsive">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left; color:#94a3b8; border-bottom:1px solid #1e293b; font-size:0.85rem;">
+            <th style="padding:10px;">Benutzer</th>
+            <th style="padding:10px;">Netzwerke</th>
+            <th style="padding:10px;">Channels</th>
+            <th style="padding:10px;">Sessions</th>
+            <th style="padding:10px;">Letzte Aktivität</th>
+            <th style="padding:10px; text-align:right;">Aktionen</th>
+          </tr>
+        </thead>
+        <tbody id="loungeUsersTableBody">
+          <tr><td colspan="6" style="padding:15px; text-align:center; color:#64748b;">Lade Lounge-Benutzer...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="color:#64748b; font-size:0.75rem; margin-top:12px;">Neue Benutzer starten ohne Netzwerke und verbinden sich nach dem Login selbst. Beim Zurücksetzen werden alle bestehenden Sitzungen des Benutzers beendet. Passwörter werden nur als bcrypt-Hash gespeichert und niemals angezeigt.</p>
+  </div>
+</div>
+
 <script>
 
 function switchView(tabKey, btn) {
-  const panels = ['bots', 'sources', 'moderation', 'users', 'monitor', 'backups'];
+  const panels = ['bots', 'sources', 'moderation', 'users', 'lounge', 'monitor', 'backups'];
   panels.forEach(k => {
     const el = document.getElementById('panel-' + k);
     if (el) {
@@ -1305,6 +1395,8 @@ function switchView(tabKey, btn) {
 
   if (tabKey === 'users') {
     fetchUsersList();
+  } else if (tabKey === 'lounge') {
+    window.fetchLoungeUsers?.();
   } else if (tabKey === 'backups') {
     fetchBackupsList();
   } else if (tabKey === 'monitor') {
@@ -1488,11 +1580,217 @@ async function deleteBackup(filename) {
 </script>
 <script>
 (function () {
+  const LOUNGE_API = '/api/admin/lounge/users';
+
+  function loungeEscape(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function loungeAlert(message, ok) {
+    const box = document.getElementById('loungeAlert');
+    if (!box) return;
+    box.textContent = message;
+    box.classList.remove('hidden');
+    box.style.background = ok ? 'rgba(22,163,74,.15)' : 'rgba(220,38,38,.15)';
+    box.style.color = ok ? '#86efac' : '#fca5a5';
+  }
+
+  function loungeHideAlert() {
+    document.getElementById('loungeAlert')?.classList.add('hidden');
+  }
+
+  function loungeFormatDate(value) {
+    if (!value) return '–';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '–';
+    return date.toLocaleString('de-DE');
+  }
+
+  async function loungeJson(response) {
+    try { return await response.json(); } catch (_) { return {}; }
+  }
+
+  window.fetchLoungeUsers = async function () {
+    const tbody = document.getElementById('loungeUsersTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#64748b;">Lade Lounge-Benutzer...</td></tr>';
+
+    try {
+      const response = await fetch(LOUNGE_API, { headers: { 'Accept': 'application/json' } });
+      const data = await loungeJson(response);
+      if (response.status === 401) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#f87171;">Nicht autorisiert. Bitte neu anmelden.</td></tr>';
+        return;
+      }
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || ('HTTP ' + response.status));
+      }
+
+      const badge = document.getElementById('loungeServiceStatus');
+      if (badge) {
+        const active = data.service === 'active';
+        badge.textContent = active ? 'Dienst: aktiv' : 'Dienst: inaktiv';
+        badge.style.background = active ? 'rgba(34,197,94,.16)' : 'rgba(239,68,68,.16)';
+        badge.style.color = active ? '#86efac' : '#fca5a5';
+      }
+
+      const users = Array.isArray(data.users) ? data.users : [];
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#64748b;">Keine Lounge-Benutzer vorhanden.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(function (user) {
+        const name = loungeEscape(user.name);
+        const size = Number(user.size || 0).toLocaleString('de-DE');
+        return '<tr style="border-bottom:1px solid rgba(255,255,255,.05); font-size:.9rem;">'
+          + '<td style="padding:10px;"><strong style="color:#f8fafc;">' + name + '</strong><div style="color:#64748b;font-size:.72rem;">' + (user.log ? 'Logs aktiv' : 'ohne Logs') + ' · ' + size + ' B</div></td>'
+          + '<td style="padding:10px; color:#cbd5e1;">' + Number(user.networks || 0) + '</td>'
+          + '<td style="padding:10px; color:#cbd5e1;">' + Number(user.channels || 0) + '</td>'
+          + '<td style="padding:10px; color:#cbd5e1;">' + Number(user.sessions || 0) + '</td>'
+          + '<td style="padding:10px; color:#94a3b8; font-size:.8rem;">' + loungeEscape(loungeFormatDate(user.last_activity || user.modified)) + '</td>'
+          + '<td style="padding:10px; text-align:right; white-space:nowrap;">'
+          + '<button type="button" data-lounge-action="reset" data-user="' + name + '" style="background:#334155;border:none;color:#f8fafc;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:.8rem;margin-right:4px;">Passwort</button>'
+          + '<button type="button" data-lounge-action="delete" data-user="' + name + '" style="background:#dc2626;border:none;color:#fff;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:.8rem;">Löschen</button>'
+          + '</td></tr>';
+      }).join('');
+    } catch (error) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:15px; text-align:center; color:#f87171;">Fehler: ' + loungeEscape(error.message) + '</td></tr>';
+    }
+  };
+
+  function showLoungeReset(name) {
+    const box = document.getElementById('loungeResetBox');
+    if (!box) return;
+    document.getElementById('loungeResetUser').value = name;
+    document.getElementById('loungeResetName').textContent = name;
+    document.getElementById('loungeResetPass').value = '';
+    document.getElementById('loungeResetPass2').value = '';
+    box.classList.remove('hidden');
+    document.getElementById('loungeResetPass').focus();
+  }
+
+  async function deleteLoungeUser(name) {
+    if (!window.confirm('Lounge-Benutzer "' + name + '" wirklich löschen?\n\nDer Zugang wird sofort entfernt. Diese Aktion kann nicht rückgängig gemacht werden.')) {
+      return;
+    }
+    try {
+      const response = await fetch(LOUNGE_API + '/' + encodeURIComponent(name) + '/delete', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' }
+      });
+      const data = await loungeJson(response);
+      if (!response.ok || !data.success) throw new Error(data.error || ('HTTP ' + response.status));
+      loungeAlert(data.message || 'Benutzer wurde gelöscht.', true);
+      window.fetchLoungeUsers();
+    } catch (error) {
+      loungeAlert('Löschen fehlgeschlagen: ' + error.message, false);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('loungeRefreshBtn')?.addEventListener('click', window.fetchLoungeUsers);
+
+    document.getElementById('loungeUsersTableBody')?.addEventListener('click', function (event) {
+      const button = event.target.closest('button[data-lounge-action]');
+      if (!button) return;
+      const name = button.getAttribute('data-user') || '';
+      if (button.getAttribute('data-lounge-action') === 'reset') showLoungeReset(name);
+      if (button.getAttribute('data-lounge-action') === 'delete') deleteLoungeUser(name);
+    });
+
+    document.getElementById('loungeCreateForm')?.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      loungeHideAlert();
+      const name = document.getElementById('loungeNewName').value.trim();
+      const password = document.getElementById('loungeNewPass').value;
+      const repeat = document.getElementById('loungeNewPass2').value;
+      const saveLogs = document.getElementById('loungeNewLogs').checked;
+
+      if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{1,31}$/.test(name)) {
+        loungeAlert('Benutzername: 2-32 Zeichen, erlaubt sind Buchstaben, Ziffern, Punkt, Unterstrich und Bindestrich.', false);
+        return;
+      }
+      if (password.length < 8) {
+        loungeAlert('Das Passwort muss mindestens 8 Zeichen lang sein.', false);
+        return;
+      }
+      if (password !== repeat) {
+        loungeAlert('Die beiden Passwörter stimmen nicht überein.', false);
+        return;
+      }
+
+      const submit = event.target.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        const response = await fetch(LOUNGE_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ name: name, password: password, log: saveLogs })
+        });
+        const data = await loungeJson(response);
+        if (!response.ok || !data.success) throw new Error(data.error || ('HTTP ' + response.status));
+        event.target.reset();
+        document.getElementById('loungeNewLogs').checked = true;
+        loungeAlert(data.message || 'Benutzer wurde angelegt.', true);
+        window.fetchLoungeUsers();
+      } catch (error) {
+        loungeAlert('Anlegen fehlgeschlagen: ' + error.message, false);
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    });
+
+    document.getElementById('loungeResetCancel')?.addEventListener('click', function () {
+      document.getElementById('loungeResetBox').classList.add('hidden');
+    });
+
+    document.getElementById('loungeResetForm')?.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      loungeHideAlert();
+      const name = document.getElementById('loungeResetUser').value;
+      const password = document.getElementById('loungeResetPass').value;
+      const repeat = document.getElementById('loungeResetPass2').value;
+
+      if (password.length < 8) {
+        loungeAlert('Das neue Passwort muss mindestens 8 Zeichen lang sein.', false);
+        return;
+      }
+      if (password !== repeat) {
+        loungeAlert('Die beiden Passwörter stimmen nicht überein.', false);
+        return;
+      }
+
+      try {
+        const response = await fetch(LOUNGE_API + '/' + encodeURIComponent(name) + '/reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ password: password })
+        });
+        const data = await loungeJson(response);
+        if (!response.ok || !data.success) throw new Error(data.error || ('HTTP ' + response.status));
+        document.getElementById('loungeResetBox').classList.add('hidden');
+        loungeAlert(data.message || 'Passwort wurde zurückgesetzt.', true);
+        window.fetchLoungeUsers();
+      } catch (error) {
+        loungeAlert('Zurücksetzen fehlgeschlagen: ' + error.message, false);
+      }
+    });
+  });
+})();
+</script>
+<script>
+(function () {
   function normalizeAdminPanels() {
     const root = document.getElementById('adminView');
     if (!root) return;
     const nav = document.querySelector('.nav-tabs-bar');
-    const keys = ['bots', 'sources', 'moderation', 'users', 'monitor', 'backups'];
+    const keys = ['bots', 'sources', 'moderation', 'users', 'lounge', 'monitor', 'backups'];
     const shell = nav ? nav.closest('.card') : null;
     if (nav) {
       const grid = root.querySelector(':scope > .grid');
@@ -1508,7 +1806,7 @@ async function deleteBackup(filename) {
   }
 
   window.switchView = function (tabKey, btn) {
-    ['bots', 'sources', 'moderation', 'users', 'monitor', 'backups'].forEach(function (key) {
+    ['bots', 'sources', 'moderation', 'users', 'lounge', 'monitor', 'backups'].forEach(function (key) {
       const panel = document.getElementById('panel-' + key);
       if (panel) panel.classList.toggle('active', key === tabKey);
     });
@@ -1519,6 +1817,7 @@ async function deleteBackup(filename) {
       if (typeof window.fetchUsersList === 'function') window.fetchUsersList();
       else if (typeof window.loadUsers === 'function') window.loadUsers();
     }
+    if (tabKey === 'lounge' && typeof window.fetchLoungeUsers === 'function') window.fetchLoungeUsers();
     if (tabKey === 'monitor') { window.loadMonitorStats(); window.loadMonitorLogs(); }
     if (tabKey === 'backups' && typeof window.fetchBackupsList === 'function') window.fetchBackupsList();
   };

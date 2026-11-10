@@ -12,3 +12,8 @@
 database.sqlite
 backups/
 .env
+
+# Laufzeit-Schlüssel / Secrets – niemals committen
+/storage/*.key
+/storage/*.pem
+/storage/*.crt

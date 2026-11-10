@@ -8,7 +8,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="/assets/fk-neon.css?v=20261110b">
+    <link rel="stylesheet" href="/assets/fk-neon.css?v=20261110g">
 </head>
 
 <body class="fk-body">
@@ -16,13 +16,69 @@
 
     <!-- ================= HEADER ================= -->
     <header class="fk-header">
-        <div class="fk-header-brand">
-            <img
-                class="fk-header-logo"
-                src="/assets/fortknox-original.png"
-                alt="FortKnox – Release Intelligence &amp; Control Center"
-            >
+        <div class="fk-header-brand fk-brand" aria-label="FortKnox – Release Intelligence &amp; Control Center">
+            <div class="fk-brand-badge">
+                <img class="fk-brand-shield" src="/assets/fortknox-shield.png" alt="">
+            </div>
+
+            <div class="fk-brand-text">
+                <div class="fk-wordmark" aria-hidden="true"><span class="fk-word-fort">Fort</span><span class="fk-word-knox">Knox</span></div>
+                <div class="fk-brand-sub" aria-hidden="true">Release Intelligence &amp; Control Center</div>
+                <div class="fk-brand-tags" aria-hidden="true">Monitor <i>◆</i> Manage <i>◆</i> Secure</div>
+            </div>
         </div>
+
+        <svg class="fk-header-globe" viewBox="0 0 420 420" aria-hidden="true" focusable="false">
+            <defs>
+                <radialGradient id="fkGlobeFill" cx="36%" cy="30%" r="74%">
+                    <stop offset="0%" stop-color="#27a8c4" stop-opacity=".40"/>
+                    <stop offset="52%" stop-color="#0c3a46" stop-opacity=".20"/>
+                    <stop offset="100%" stop-color="#041014" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="fkGlobeLine" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#2bd9ff" stop-opacity=".95"/>
+                    <stop offset="55%" stop-color="#39d7c0" stop-opacity=".55"/>
+                    <stop offset="100%" stop-color="#7dff2a" stop-opacity=".55"/>
+                </linearGradient>
+            </defs>
+
+            <circle cx="210" cy="210" r="153" fill="url(#fkGlobeFill)" stroke="url(#fkGlobeLine)" stroke-width="1.5"/>
+            <g fill="none" stroke="#2bd9ff" stroke-opacity=".34" stroke-width=".8">
+                <ellipse cx="210" cy="210" rx="153" ry="58"/>
+                <ellipse cx="210" cy="210" rx="153" ry="108"/>
+                <ellipse cx="210" cy="210" rx="58" ry="153"/>
+                <ellipse cx="210" cy="210" rx="108" ry="153"/>
+                <path d="M57 210h306M210 57v306"/>
+            </g>
+
+            <g class="fk-globe-orbit" fill="none" stroke="#7dff2a" stroke-opacity=".5" stroke-width="1">
+                <ellipse cx="210" cy="210" rx="188" ry="62" transform="rotate(-18 210 210)"/>
+            </g>
+
+            <g fill="#7dff2a" opacity=".78">
+                <circle cx="137" cy="154" r="1.7"/><circle cx="150" cy="143" r="1.5"/><circle cx="164" cy="151" r="1.8"/>
+                <circle cx="143" cy="169" r="1.6"/><circle cx="158" cy="178" r="1.4"/><circle cx="130" cy="162" r="1.3"/>
+                <circle cx="172" cy="132" r="1.4"/><circle cx="176" cy="163" r="1.5"/>
+                <circle cx="176" cy="234" r="1.6"/><circle cx="187" cy="249" r="1.8"/><circle cx="181" cy="267" r="1.5"/>
+                <circle cx="191" cy="285" r="1.4"/><circle cx="171" cy="300" r="1.3"/><circle cx="184" cy="304" r="1.2"/>
+                <circle cx="231" cy="139" r="1.5"/><circle cx="242" cy="149" r="1.7"/><circle cx="253" cy="139" r="1.3"/>
+                <circle cx="247" cy="160" r="1.4"/><circle cx="262" cy="151" r="1.2"/><circle cx="258" cy="128" r="1.2"/>
+                <circle cx="236" cy="190" r="1.6"/><circle cx="246" cy="205" r="1.8"/><circle cx="241" cy="225" r="1.5"/>
+                <circle cx="251" cy="241" r="1.4"/><circle cx="231" cy="215" r="1.3"/><circle cx="249" cy="186" r="1.2"/>
+                <circle cx="281" cy="139" r="1.6"/><circle cx="301" cy="149" r="1.8"/><circle cx="321" cy="144" r="1.4"/>
+                <circle cx="291" cy="164" r="1.5"/><circle cx="311" cy="174" r="1.7"/><circle cx="331" cy="159" r="1.4"/>
+                <circle cx="341" cy="179" r="1.3"/><circle cx="303" cy="190" r="1.4"/><circle cx="322" cy="198" r="1.2"/>
+                <circle cx="326" cy="250" r="1.6"/><circle cx="341" cy="256" r="1.5"/><circle cx="336" cy="271" r="1.4"/>
+                <circle cx="320" cy="268" r="1.2"/><circle cx="352" cy="244" r="1.2"/>
+            </g>
+
+            <g fill="#2bd9ff">
+                <circle cx="247" cy="158" r="2.3"/>
+                <circle cx="176" cy="181" r="2.1"/>
+                <circle cx="300" cy="168" r="1.9"/>
+                <circle cx="190" cy="286" r="1.8"/>
+            </g>
+        </svg>
 
         <div class="fk-header-right">
             <nav class="fk-topnav" aria-label="Hauptnavigation">
@@ -251,6 +307,18 @@
                                 <div class="fk-chart-bar" style="--h:74%"><i></i><em>29.10.</em></div>
                                 <div class="fk-chart-bar" style="--h:68%"><i></i><em>30.10.</em></div>
                                 <div class="fk-chart-bar is-peak" style="--h:84%"><i></i><em>31.10.</em></div>
+
+                                <svg class="fk-chart-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                                    <polyline
+                                        points="7.14,48 21.43,36 35.71,27 50,21 64.29,26 78.57,32 92.86,16"
+                                        fill="none"
+                                        stroke="rgba(43, 217, 255, .72)"
+                                        stroke-width="1.4"
+                                        stroke-linejoin="round"
+                                        stroke-linecap="round"
+                                        vector-effect="non-scaling-stroke"
+                                    />
+                                </svg>
                             </div>
                         </div>
 
@@ -1286,18 +1354,39 @@ async function pollLiveReleases() {
             link.classList.toggle('active', target === id);
         });
     }
-    if ('IntersectionObserver' in window) {
-        var sections = ['top', 'releases-panel', 'live-panel', 'visitor-panel', 'system-panel'];
-        var spy = new IntersectionObserver(function (entries) {
-            var visible = entries.filter(function (e) { return e.isIntersecting; })
-                .sort(function (a, b) { return b.intersectionRatio - a.intersectionRatio; });
-            if (visible.length) setActive(visible[0].target.id);
-        }, { rootMargin: '-15% 0px -55% 0px', threshold: [0.05, 0.25, 0.5] });
-        sections.forEach(function (id) {
+    var spySections = ['live-panel', 'visitor-panel', 'releases-panel', 'system-panel'];
+    function updateSpy() {
+        /* Am Seitenanfang gehört "Dashboard" aktiv – erst ab der ersten
+           Inhaltssektion wird die passende Unterseite markiert. */
+        if (!navLinks.length) return;
+        var line = 140; /* Referenzlinie unterhalb des Headerrands */
+        var y = (window.pageYOffset || document.documentElement.scrollTop || 0) + line;
+        var current = 'top';
+        var bestTop = -Infinity;
+        spySections.forEach(function (id) {
             var el = document.getElementById(id);
-            if (el) spy.observe(el);
+            if (!el) return;
+            var top = el.getBoundingClientRect().top + (window.pageYOffset || 0);
+            if (top <= y && top > bestTop) {
+                bestTop = top;
+                current = id;
+            }
+        });
+        if (window.pageYOffset <= 8) current = 'top';
+        setActive(current);
+    }
+    var spyTick = false;
+    function onSpyScroll() {
+        if (spyTick) return;
+        spyTick = true;
+        window.requestAnimationFrame(function () {
+            spyTick = false;
+            updateSpy();
         });
     }
+    window.addEventListener('scroll', onSpyScroll, { passive: true });
+    window.addEventListener('resize', onSpyScroll);
+    updateSpy();
     navLinks.forEach(function (link) {
         link.addEventListener('click', function () {
             setActive((link.getAttribute('href') || '').replace('#', ''));

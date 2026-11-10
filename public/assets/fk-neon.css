@@ -3,7 +3,7 @@
    Gemeinsames Layout für dashboard.html und admin.html
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
 
 :root {
     color-scheme: dark;
@@ -32,6 +32,7 @@
     --fk-warn: #ffc857;
 
     --fk-sans: 'Rajdhani', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --fk-display: 'Chakra Petch', 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
     --fk-mono: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
     --fk-glow-green: 0 0 22px rgba(125, 255, 42, .16);
@@ -131,7 +132,7 @@ body.fk-body::after {
     align-items: center;
     justify-content: space-between;
     gap: 26px;
-    min-height: 154px;
+    min-height: 214px;
     padding: 18px clamp(18px, 3vw, 46px);
     background:
         linear-gradient(180deg, rgba(8, 16, 19, .9), rgba(4, 9, 11, .96)),
@@ -156,25 +157,50 @@ body.fk-body::after {
     mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
 }
 
-/* angedeutete Cyber-Globe rechts */
+/* Neon-Kante unter dem Header */
 .fk-header::after {
     content: "";
     position: absolute;
-    right: 20%;
-    top: 50%;
-    width: 430px;
-    height: 430px;
-    transform: translateY(-50%);
-    border-radius: 50%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    height: 2px;
     pointer-events: none;
-    background:
-        radial-gradient(circle at 62% 38%, rgba(43, 217, 255, .22), transparent 38%),
-        repeating-linear-gradient(0deg, rgba(43, 217, 255, .11) 0 1px, transparent 1px 12px),
-        repeating-linear-gradient(90deg, rgba(43, 217, 255, .09) 0 1px, transparent 1px 12px);
-    opacity: .72;
-    filter: blur(.2px);
-    -webkit-mask-image: radial-gradient(circle, #000 32%, transparent 70%);
-    mask-image: radial-gradient(circle, #000 32%, transparent 70%);
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(125, 255, 42, .18) 8%,
+        rgba(125, 255, 42, .85) 26%,
+        rgba(43, 217, 255, .9) 50%,
+        rgba(125, 255, 42, .85) 72%,
+        rgba(125, 255, 42, .18) 92%,
+        transparent 100%);
+    box-shadow: 0 0 16px rgba(125, 255, 42, .35), 0 0 44px rgba(43, 217, 255, .18);
+    opacity: .85;
+}
+
+/* Cyber-Globe (Inline-SVG) */
+.fk-header-globe {
+    position: absolute;
+    right: 3.5%;
+    top: 50%;
+    z-index: 1;
+    width: clamp(330px, 35vw, 540px);
+    height: auto;
+    transform: translateY(-50%);
+    pointer-events: none;
+    opacity: .85;
+    filter: drop-shadow(0 0 34px rgba(43, 217, 255, .16));
+}
+
+.fk-header-globe .fk-globe-orbit {
+    transform-origin: 210px 210px;
+    animation: fk-globe-spin 60s linear infinite;
+}
+
+@keyframes fk-globe-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .fk-header-brand {
@@ -197,22 +223,119 @@ body.fk-body::after {
     mix-blend-mode: screen;
 }
 
+
+/* Marken-Lockup: Schild + metallene Wortmarke (aus dem Logo abgeleitet) */
+.fk-brand {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 1.6vw, 24px);
+    min-width: 0;
+}
+
+.fk-brand-badge {
+    position: relative;
+    flex-shrink: 0;
+    width: clamp(132px, 13.4vw, 208px);
+    filter: drop-shadow(0 0 30px rgba(43, 217, 255, .16));
+}
+
+.fk-brand-shield {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: saturate(1.08) contrast(1.05) drop-shadow(0 0 22px rgba(43, 217, 255, .20)) drop-shadow(0 0 34px rgba(125, 255, 42, .12));
+}
+
+.fk-brand-text {
+    min-width: 0;
+}
+
+.fk-wordmark {
+    display: flex;
+    align-items: baseline;
+    line-height: .82;
+    font-family: 'Chakra Petch', 'Rajdhani', system-ui, sans-serif;
+    font-size: clamp(46px, 5.9vw, 94px);
+    font-weight: 700;
+    letter-spacing: .012em;
+    text-transform: uppercase;
+    filter: drop-shadow(0 7px 14px rgba(0, 0, 0, .55));
+    white-space: nowrap;
+}
+
+.fk-word-fort,
+.fk-word-knox {
+    display: inline-block;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.fk-word-fort {
+    background-image: linear-gradient(180deg, #ffffff 0%, #eef4f6 26%, #b9c6ca 48%, #f4fbfc 62%, #8c9ba0 82%, #dce8ea 100%);
+    -webkit-text-stroke: .5px rgba(8, 16, 18, .55);
+    filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .45));
+}
+
+.fk-word-knox {
+    background-image: linear-gradient(180deg, #ecffd2 0%, #b4ff70 25%, #6eea00 50%, #d2ff9e 64%, #4bbd00 82%, #9dff4d 100%);
+    -webkit-text-stroke: .5px rgba(10, 40, 0, .45);
+    filter: drop-shadow(0 0 16px rgba(125, 255, 42, .28)) drop-shadow(0 2px 0 rgba(0, 0, 0, .45));
+}
+
+.fk-brand-sub {
+    margin-top: 8px;
+    overflow: hidden;
+    color: #d8e9e4;
+    font-family: var(--fk-sans);
+    font-size: clamp(10px, 1.02vw, 13.5px);
+    font-weight: 600;
+    letter-spacing: .40em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-overflow: clip;
+    text-shadow: 0 0 14px rgba(43, 217, 255, .22);
+}
+
+.fk-brand-tags {
+    margin-top: 6px;
+    color: var(--fk-green);
+    font-family: var(--fk-sans);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(125, 255, 42, .28);
+}
+
+.fk-brand-tags i {
+    margin: 0 7px;
+    color: var(--fk-cyan);
+    font-style: normal;
+    text-shadow: 0 0 8px rgba(43, 217, 255, .5);
+}
+
 .fk-header-right {
     position: relative;
     z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: space-between;
     gap: 10px;
+    align-self: stretch;
+    padding: 4px 0 2px;
     flex-shrink: 0;
 }
 
 .fk-topnav {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 0;
     font-family: var(--fk-sans);
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 600;
     letter-spacing: .22em;
     text-transform: uppercase;
@@ -224,18 +347,18 @@ body.fk-body::after {
     display: inline-flex;
     align-items: center;
     gap: 9px;
-    color: #a9bcb4;
+    color: #dcece6;
+    text-shadow: 0 1px 2px #04080a, 0 0 12px rgba(4, 8, 10, .95);
     transition: color .18s ease, text-shadow .18s ease;
 }
 
-.fk-topnav a::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--fk-green);
-    box-shadow: 0 0 9px rgba(125, 255, 42, .8);
-    opacity: .7;
+.fk-topnav a + a::before {
+    content: "◆";
+    margin-right: 16px;
+    color: var(--fk-green);
+    font-size: 8px;
+    text-shadow: 0 0 8px rgba(125, 255, 42, .7);
+    opacity: .8;
 }
 
 .fk-topnav a:hover,
@@ -319,13 +442,15 @@ body.fk-body::after {
     top: 16px;
     display: flex;
     flex-direction: column;
+    height: calc(100vh - 32px);
     min-height: 520px;
     padding: 0 0 16px;
-    border: 1px solid #1e3130;
-    border-radius: 8px;
+    border: 1px solid #223634;
+    border-radius: 4px;
     background:
-        linear-gradient(165deg, rgba(12, 22, 24, .97) 0%, rgba(7, 13, 15, .98) 55%, rgba(5, 10, 11, .99) 100%);
-    box-shadow: inset 0 1px rgba(255, 255, 255, .035), 0 20px 44px rgba(0, 0, 0, .34), 0 0 24px rgba(125, 255, 42, .035);
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .014) 0 1px, transparent 1px 4px),
+        linear-gradient(165deg, rgba(14, 25, 27, .98) 0%, rgba(7, 13, 15, .99) 55%, rgba(5, 10, 11, 1) 100%);
+    box-shadow: inset 3px 0 0 -2px rgba(125, 255, 42, .55), inset 0 1px rgba(255, 255, 255, .05), 0 20px 44px rgba(0, 0, 0, .36), 0 0 26px rgba(125, 255, 42, .035);
     overflow: hidden;
 }
 
@@ -437,7 +562,7 @@ body.fk-body::after {
 .fk-nav-foot {
     margin-top: auto;
     padding: 22px 20px 6px;
-    color: rgba(125, 255, 42, .55);
+    color: rgba(125, 255, 42, .78);
     font-family: var(--fk-sans);
     font-size: 12px;
     font-weight: 500;
@@ -499,13 +624,18 @@ body.fk-body::after {
     display: flex;
     align-items: center;
     gap: 15px;
-    min-height: 92px;
+    min-height: 96px;
     padding: 17px 18px 19px;
-    border: 1px solid #1d2f2e;
-    border-radius: 8px;
+    border: 1px solid #223634;
+    border-radius: 4px;
     background:
-        linear-gradient(150deg, rgba(15, 26, 28, .98), rgba(7, 13, 15, .99));
-    box-shadow: inset 0 1px rgba(255, 255, 255, .035), 0 14px 34px rgba(0, 0, 0, .3);
+        linear-gradient(90deg, rgba(125, 255, 42, .85), rgba(125, 255, 42, .85)) left top / 20px 1px no-repeat,
+        linear-gradient(0deg, rgba(125, 255, 42, .85), rgba(125, 255, 42, .85)) left top / 1px 20px no-repeat,
+        linear-gradient(270deg, rgba(43, 217, 255, .75), rgba(43, 217, 255, .75)) right top / 20px 1px no-repeat,
+        linear-gradient(180deg, rgba(43, 217, 255, .75), rgba(43, 217, 255, .75)) right top / 1px 20px no-repeat,
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .016) 0 1px, transparent 1px 4px),
+        linear-gradient(150deg, rgba(17, 29, 31, .99), rgba(7, 13, 15, .995));
+    box-shadow: inset 0 1px rgba(255, 255, 255, .05), 0 14px 34px rgba(0, 0, 0, .32), 0 0 20px rgba(125, 255, 42, .025);
     overflow: hidden;
     transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
@@ -564,7 +694,7 @@ body.fk-body::after {
 
 .fk-stat-value {
     color: #f3fff8;
-    font-family: var(--fk-sans);
+    font-family: var(--fk-display);
     font-size: clamp(25px, 2.3vw, 33px);
     font-weight: 600;
     line-height: 1;
@@ -579,7 +709,8 @@ body.fk-body::after {
 .fk-stat-label {
     margin-top: 6px;
     color: var(--fk-muted);
-    font-size: 11px;
+    font-family: var(--fk-display);
+    font-size: 10.5px;
     font-weight: 600;
     letter-spacing: .16em;
     text-transform: uppercase;
@@ -608,11 +739,20 @@ body.fk-body::after {
     scroll-margin-top: 16px;
     flex-direction: column;
     min-width: 0;
-    border: 1px solid #1c2d2c;
-    border-radius: 8px;
+    border: 1px solid #223634;
+    border-radius: 4px;
     background:
-        linear-gradient(155deg, rgba(12, 21, 23, .98) 0%, rgba(7, 13, 15, .99) 55%, rgba(5, 10, 11, 1) 100%);
-    box-shadow: inset 0 1px rgba(255, 255, 255, .03), 0 18px 40px rgba(0, 0, 0, .32);
+        linear-gradient(90deg, rgba(125, 255, 42, .9), rgba(125, 255, 42, .9)) left top / 24px 1px no-repeat,
+        linear-gradient(0deg, rgba(125, 255, 42, .9), rgba(125, 255, 42, .9)) left top / 1px 24px no-repeat,
+        linear-gradient(270deg, rgba(43, 217, 255, .8), rgba(43, 217, 255, .8)) right top / 24px 1px no-repeat,
+        linear-gradient(180deg, rgba(43, 217, 255, .8), rgba(43, 217, 255, .8)) right top / 1px 24px no-repeat,
+        linear-gradient(90deg, rgba(43, 217, 255, .8), rgba(43, 217, 255, .8)) left bottom / 24px 1px no-repeat,
+        linear-gradient(0deg, rgba(43, 217, 255, .8), rgba(43, 217, 255, .8)) left bottom / 1px 24px no-repeat,
+        linear-gradient(270deg, rgba(125, 255, 42, .9), rgba(125, 255, 42, .9)) right bottom / 24px 1px no-repeat,
+        linear-gradient(180deg, rgba(125, 255, 42, .9), rgba(125, 255, 42, .9)) right bottom / 1px 24px no-repeat,
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .014) 0 1px, transparent 1px 4px),
+        linear-gradient(155deg, rgba(15, 26, 28, .99) 0%, rgba(7, 13, 15, .995) 55%, rgba(5, 10, 11, 1) 100%);
+    box-shadow: inset 0 1px rgba(255, 255, 255, .045), 0 18px 40px rgba(0, 0, 0, .34), 0 0 22px rgba(125, 255, 42, .03);
     overflow: hidden;
 }
 
@@ -649,6 +789,7 @@ body.fk-body::after {
     gap: 10px;
     min-width: 0;
     color: #ecfff3;
+    font-family: var(--fk-display);
     font-size: 15px;
     font-weight: 600;
     letter-spacing: .11em;
@@ -964,6 +1105,18 @@ body.fk-body::after {
 .fk-chart-bar.is-peak::after {
     border-color: var(--fk-cyan);
     box-shadow: 0 0 10px rgba(43, 217, 255, .8);
+}
+
+.fk-chart-line {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    top: 0;
+    height: calc(100% - 22px);
+    overflow: visible;
+    pointer-events: none;
+    filter: drop-shadow(0 0 6px rgba(43, 217, 255, .35));
+    z-index: 2;
 }
 
 .fk-chart-bar em {
@@ -1539,6 +1692,7 @@ body.fk-body::after {
     .fk-sidebar {
         position: relative;
         top: 0;
+        height: auto;
         min-height: 0;
         flex-direction: row;
         align-items: center;
@@ -1580,9 +1734,10 @@ body.fk-body::after {
     .fk-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .fk-header::after {
-        right: 4%;
-        opacity: .32;
+    .fk-header-globe {
+        right: -4%;
+        width: 330px;
+        opacity: .35;
     }
 }
 
@@ -1594,8 +1749,27 @@ body.fk-body::after {
         min-height: 0;
         padding: 16px 16px 18px;
     }
-    .fk-header-logo {
-        width: clamp(220px, 58vw, 340px);
+    .fk-brand-badge {
+        width: clamp(78px, 18vw, 108px);
+    }
+
+    .fk-wordmark {
+        font-size: clamp(29px, 8.4vw, 46px);
+    }
+
+    .fk-brand-sub {
+        font-size: 8.5px;
+        letter-spacing: .26em;
+    }
+
+    .fk-brand-tags {
+        display: none;
+    }
+
+    .fk-header-globe {
+        right: -14%;
+        width: 300px;
+        opacity: .28;
     }
     .fk-header-right {
         align-items: flex-start;
@@ -2711,5 +2885,66 @@ body.fk-admin #loginForm button.primary:hover {
         bottom: 12px;
         left: 12px;
         text-align: center;
+    }
+}
+
+/* ---------- Admin: kompaktes Marken-Lockup ---------- */
+
+.fk-admin-header .fk-brand {
+    gap: 14px;
+}
+
+.fk-admin-header .fk-brand-badge {
+    width: clamp(78px, 7.2vw, 108px);
+}
+
+.fk-admin-header .fk-wordmark {
+    font-size: clamp(29px, 3.1vw, 46px);
+}
+
+.fk-admin-header .fk-brand-sub {
+    margin-top: 5px;
+    font-size: 9px;
+    letter-spacing: .30em;
+}
+
+.fk-admin-header .fk-dashboard-link {
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.fk-login-brand {
+    justify-content: center;
+    gap: 12px;
+    margin: 0 auto 16px;
+}
+
+.fk-login-brand .fk-brand-badge {
+    width: clamp(68px, 18vw, 84px);
+}
+
+.fk-login-brand .fk-wordmark {
+    font-size: clamp(30px, 8vw, 42px);
+}
+
+.fk-login-brand .fk-brand-sub {
+    margin-top: 4px;
+    font-size: 8.5px;
+    letter-spacing: .24em;
+    text-align: left;
+}
+
+@media (max-width: 560px) {
+    .fk-admin-header .fk-brand-badge {
+        width: 68px;
+    }
+
+    .fk-admin-header .fk-wordmark {
+        font-size: 27px;
+    }
+
+    .fk-admin-header .fk-brand-sub {
+        font-size: 8px;
+        letter-spacing: .2em;
     }
 }

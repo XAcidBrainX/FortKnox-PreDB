@@ -332,12 +332,20 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/assets/fk-neon.css?v=20261110b">
+  <link rel="stylesheet" href="/assets/fk-neon.css?v=20261110g">
 </head>
 <body class="fk-body fk-admin">
   <div class="container">
     <div id="loginView" class="card" style="max-width: 400px; margin: 60px auto;">
-      <img class="fk-original-logo fk-login-logo" src="/assets/fortknox-original.png" alt="FortKnox Cybersecurity Control Center">
+      <div class="fk-brand fk-login-brand" aria-label="FortKnox Control Center">
+        <div class="fk-brand-badge">
+          <img class="fk-brand-shield" src="/assets/fortknox-shield.png" alt="">
+        </div>
+        <div class="fk-brand-text">
+          <div class="fk-wordmark" aria-hidden="true"><span class="fk-word-fort">Fort</span><span class="fk-word-knox">Knox</span></div>
+          <div class="fk-brand-sub" aria-hidden="true">Control Center</div>
+        </div>
+      </div>
       <h1>Admin Login</h1>
       <form id="loginForm">
         <div style="margin-bottom: 12px;">
@@ -353,9 +361,13 @@
 
     <div id="adminView" class="hidden">
       <header class="fk-admin-header">
-        <div class="fk-brand-lockup">
-          <div class="fk-brand-copy">
-            <img class="fk-original-logo" src="/assets/fortknox-original.png" alt="FortKnox Cybersecurity Control Center">
+        <div class="fk-brand fk-admin-brand" aria-label="FortKnox Control Center">
+          <div class="fk-brand-badge">
+            <img class="fk-brand-shield" src="/assets/fortknox-shield.png" alt="">
+          </div>
+          <div class="fk-brand-text">
+            <div class="fk-wordmark" aria-hidden="true"><span class="fk-word-fort">Fort</span><span class="fk-word-knox">Knox</span></div>
+            <div class="fk-brand-sub" aria-hidden="true">Control Center</div>
             <a class="fk-dashboard-link" href="/dashboard.html">&larr; Zum Live Dashboard</a>
           </div>
         </div>

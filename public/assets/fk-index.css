@@ -1,0 +1,380 @@
+/* ============================================================
+   FortKnox PreDB – Landing / Index
+   Baut auf fk-neon.css auf (Farben, Fonts, Grundflächen)
+   ============================================================ */
+
+.ix-shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1240px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 24px clamp(16px, 3vw, 40px) 26px;
+}
+
+/* ---------- Kopf ---------- */
+
+.ix-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    flex-wrap: wrap;
+    padding-bottom: 22px;
+    border-bottom: 1px solid rgba(125, 255, 42, .16);
+}
+
+.ix-brand .fk-brand-badge {
+    width: clamp(86px, 9.6vw, 132px);
+}
+
+.ix-brand .fk-wordmark {
+    font-size: clamp(34px, 4.2vw, 58px);
+}
+
+.ix-brand .fk-brand-sub {
+    margin-top: 6px;
+    font-size: clamp(8px, .82vw, 10.5px);
+    letter-spacing: .34em;
+}
+
+.ix-brand .fk-brand-tags {
+    margin-top: 5px;
+    font-size: 8.5px;
+    letter-spacing: .24em;
+}
+
+.ix-top-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.ix-domains {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 13px;
+    border: 1px solid #223634;
+    border-radius: 4px;
+    background: linear-gradient(150deg, rgba(12, 24, 26, .9), rgba(6, 12, 14, .95));
+    color: var(--fk-muted);
+    font-family: var(--fk-mono);
+    font-size: 10.5px;
+    letter-spacing: .06em;
+}
+
+.ix-domains i {
+    color: var(--fk-green);
+    font-style: normal;
+    font-size: 7px;
+    text-shadow: 0 0 8px rgba(125, 255, 42, .7);
+}
+
+.ix-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 14px;
+    border: 1px solid rgba(125, 255, 42, .3);
+    border-radius: 999px;
+    background: rgba(125, 255, 42, .06);
+    color: var(--fk-green);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-shadow: 0 0 20px rgba(125, 255, 42, .08);
+}
+
+/* ---------- Hero ---------- */
+
+.ix-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(30px, 6vh, 70px) 0 clamp(24px, 4vh, 44px);
+}
+
+.ix-eyebrow {
+    margin: 0;
+    color: var(--fk-green);
+    font-family: var(--fk-mono);
+    font-size: clamp(10px, 1vw, 12px);
+    letter-spacing: .46em;
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 0 16px rgba(125, 255, 42, .35);
+}
+
+.ix-headline {
+    margin: 16px 0 0;
+    color: #f2fff8;
+    font-family: var(--fk-display);
+    font-size: clamp(38px, 6.4vw, 82px);
+    font-weight: 700;
+    letter-spacing: .01em;
+    line-height: .98;
+    text-align: center;
+    text-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+
+.ix-headline span {
+    color: var(--fk-green);
+    text-shadow: 0 0 30px rgba(125, 255, 42, .4);
+}
+
+.ix-lead {
+    max-width: 700px;
+    margin: 18px auto 0;
+    color: var(--fk-muted);
+    font-size: clamp(14px, 1.35vw, 17px);
+    line-height: 1.62;
+    text-align: center;
+}
+
+/* ---------- Kennzahlen ---------- */
+
+.ix-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: clamp(28px, 5vh, 52px) 0 0;
+}
+
+.ix-stat {
+    position: relative;
+    padding: 16px 18px 17px;
+    border: 1px solid #223634;
+    border-radius: 4px;
+    background:
+        linear-gradient(90deg, rgba(125, 255, 42, .85), rgba(125, 255, 42, .85)) left top / 20px 1px no-repeat,
+        linear-gradient(0deg, rgba(125, 255, 42, .85), rgba(125, 255, 42, .85)) left top / 1px 20px no-repeat,
+        linear-gradient(270deg, rgba(43, 217, 255, .75), rgba(43, 217, 255, .75)) right bottom / 20px 1px no-repeat,
+        linear-gradient(180deg, rgba(43, 217, 255, .75), rgba(43, 217, 255, .75)) right bottom / 1px 20px no-repeat,
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .014) 0 1px, transparent 1px 4px),
+        linear-gradient(150deg, rgba(15, 26, 28, .99), rgba(6, 12, 14, .995));
+    box-shadow: inset 0 1px rgba(255, 255, 255, .04), 0 14px 30px rgba(0, 0, 0, .28);
+    overflow: hidden;
+}
+
+.ix-stat b {
+    display: block;
+    color: #f3fff8;
+    font-family: var(--fk-display);
+    font-size: clamp(22px, 2.6vw, 33px);
+    font-weight: 700;
+    letter-spacing: .01em;
+    line-height: 1.05;
+}
+
+.ix-stat small {
+    display: block;
+    margin-top: 6px;
+    color: var(--fk-muted);
+    font-family: var(--fk-display);
+    font-size: 9.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+}
+
+/* ---------- Navigationskarten ---------- */
+
+.ix-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: clamp(18px, 3vh, 28px);
+}
+
+.ix-link {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 22px 22px 20px;
+    border: 1px solid #223634;
+    border-radius: 4px;
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .012) 0 1px, transparent 1px 4px),
+        linear-gradient(155deg, rgba(15, 26, 28, .99), rgba(6, 12, 14, .995));
+    color: inherit;
+    text-decoration: none;
+    overflow: hidden;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.ix-link::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(125, 255, 42, .8), rgba(43, 217, 255, .5) 60%, transparent);
+    opacity: .5;
+    transition: opacity .18s ease;
+}
+
+.ix-link:hover {
+    transform: translateY(-3px);
+    border-color: rgba(125, 255, 42, .48);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, .42), 0 0 28px rgba(125, 255, 42, .12);
+}
+
+.ix-link:hover::before {
+    opacity: 1;
+}
+
+.ix-link.primary {
+    border-color: rgba(125, 255, 42, .3);
+    box-shadow: inset 0 0 34px rgba(125, 255, 42, .04);
+}
+
+.ix-ico {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 4px;
+    place-items: center;
+    border: 1px solid rgba(125, 255, 42, .3);
+    border-radius: 4px;
+    background: rgba(125, 255, 42, .06);
+    color: var(--fk-green);
+    box-shadow: inset 0 0 18px rgba(125, 255, 42, .05);
+}
+
+.ix-ico svg {
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 0 7px rgba(125, 255, 42, .45));
+}
+
+.ix-link h2 {
+    margin: 0;
+    color: #eafff1;
+    font-family: var(--fk-display);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+
+.ix-link p {
+    margin: 0;
+    color: var(--fk-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.ix-link .ix-go {
+    margin-top: 8px;
+    color: var(--fk-green);
+    font-family: var(--fk-display);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    transition: text-shadow .18s ease;
+}
+
+.ix-link:hover .ix-go {
+    text-shadow: 0 0 14px rgba(125, 255, 42, .45);
+}
+
+/* ---------- Fuß ---------- */
+
+.ix-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 18px;
+    flex-wrap: wrap;
+    padding-top: 18px;
+    border-top: 1px solid rgba(125, 255, 42, .12);
+    color: var(--fk-dim);
+    font-family: var(--fk-mono);
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.ix-foot-domains {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.ix-foot-domains a {
+    color: var(--fk-green);
+    text-decoration: none;
+    transition: text-shadow .18s ease;
+}
+
+.ix-foot-domains a:hover {
+    text-shadow: 0 0 12px rgba(125, 255, 42, .5);
+}
+
+.ix-foot-domains i {
+    color: var(--fk-cyan);
+    font-style: normal;
+    font-size: 7px;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 860px) {
+    .ix-top {
+        align-items: flex-start;
+    }
+
+    .ix-links {
+        grid-template-columns: 1fr;
+    }
+
+    .ix-link {
+        padding: 18px 18px 16px;
+    }
+}
+
+@media (max-width: 620px) {
+    .ix-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .ix-stat {
+        padding: 13px 13px 14px;
+    }
+
+    .ix-top-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .ix-eyebrow {
+        letter-spacing: .3em;
+    }
+
+    .ix-foot {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+@media (max-width: 380px) {
+    .ix-domains {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ix-link {
+        transition: none;
+    }
+}

@@ -1,0 +1,409 @@
+/*!
+ * FortKnox Neon Theme for The Lounge
+ * Abgestimmt auf das FortKnox Dashboard / Admin-Panel
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+	--body-bg-color: #04090b;
+	--window-bg-color: #071012;
+	--window-heading-color: #9fc4b7;
+	--body-color: #e7f7ef;
+	--body-color-muted: #8ba79d;
+	--button-color: #7dff2a;
+	--button-text-color-hover: #051007;
+	--link-color: #2bd9ff;
+	--focus-color: #7dff2a;
+	--unread-marker-color: #7dff2a;
+	--date-marker-color: #2bd9ff;
+	--highlight-bg-color: rgb(125 255 42 / 10%);
+	--highlight-border-color: #7dff2a;
+	--sidebar-bg-color: #050d0f;
+	--background-light-color: #132225;
+	--overlay-bg-color: rgb(2 7 9 / 86%);
+	--form-bg-color: #061013;
+	--upload-progressbar-color: #7dff2a;
+}
+
+::placeholder {
+	color: rgb(139 167 157 / 70%);
+}
+
+html {
+	scrollbar-color: #2b5a3a #071012;
+	scrollbar-width: thin;
+}
+
+body {
+	font-family: 'Rajdhani', 'Segoe UI', system-ui, -apple-system, sans-serif;
+	background-color: var(--body-bg-color);
+	background-image:
+		radial-gradient(ellipse 60% 50% at 78% 8%, rgb(43 217 255 / 10%), transparent 60%),
+		linear-gradient(rgb(90 200 170 / 4%) 1px, transparent 1px),
+		linear-gradient(90deg, rgb(90 200 170 / 4%) 1px, transparent 1px);
+	background-size: auto, 32px 32px, 32px 32px;
+}
+
+::-webkit-scrollbar {
+	background-color: transparent;
+	width: 9px;
+}
+
+::-webkit-scrollbar-thumb:vertical {
+	background: #1e3b2c;
+	border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:vertical:hover {
+	background: #2f6b41;
+}
+
+::-webkit-scrollbar-thumb:vertical:active {
+	background: #4fa85f;
+}
+
+/* ---------- Marken-Lockup statt Standard-Logo ---------- */
+#loading .logo,
+#loading .logo-inverted,
+#sign-in .logo,
+#sign-in .logo-inverted,
+.logo-container .logo,
+.logo-container .logo-inverted {
+	display: none !important;
+}
+
+#loading-status-container::before,
+#sign-in .container::before,
+.logo-container::before {
+	content: "FORTKNOX";
+	display: block;
+	font-family: 'Chakra Petch', 'Rajdhani', system-ui, sans-serif;
+	font-size: 34px;
+	font-weight: 700;
+	letter-spacing: .10em;
+	line-height: 1;
+	text-align: center;
+	background-image: linear-gradient(90deg, #eef4f6 0%, #f4fbfc 34%, #b9c6ca 40%, #b4ff70 50%, #6eea00 70%, #d2ff9e 88%, #9dff4d 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	filter: drop-shadow(0 0 18px rgb(125 255 42 / 26%)) drop-shadow(0 2px 0 rgb(0 0 0 / 45%));
+}
+
+#loading-status-container::before,
+#sign-in .container::before {
+	margin: 0 0 18px;
+}
+
+.logo-container::before {
+	margin: 10px 0 12px;
+	font-size: 20px;
+	color: #b9ff8a;
+	letter-spacing: .16em;
+	text-shadow: 0 0 16px rgb(125 255 42 / 35%);
+}
+
+#loading-page-message,
+#loading p {
+	color: var(--body-color-muted);
+}
+
+/* ---------- Fenster / Panels ---------- */
+.window {
+	background:
+		linear-gradient(90deg, rgb(125 255 42 / 80%), rgb(125 255 42 / 80%)) left top / 26px 1px no-repeat,
+		linear-gradient(0deg, rgb(125 255 42 / 80%), rgb(125 255 42 / 80%)) left top / 1px 26px no-repeat,
+		linear-gradient(270deg, rgb(43 217 255 / 75%), rgb(43 217 255 / 75%)) right top / 26px 1px no-repeat,
+		linear-gradient(180deg, rgb(43 217 255 / 75%), rgb(43 217 255 / 75%)) right top / 1px 26px no-repeat,
+		linear-gradient(90deg, rgb(43 217 255 / 75%), rgb(43 217 255 / 75%)) left bottom / 26px 1px no-repeat,
+		linear-gradient(0deg, rgb(43 217 255 / 75%), rgb(43 217 255 / 75%)) left bottom / 1px 26px no-repeat,
+		linear-gradient(270deg, rgb(125 255 42 / 80%), rgb(125 255 42 / 80%)) right bottom / 26px 1px no-repeat,
+		linear-gradient(180deg, rgb(125 255 42 / 80%), rgb(125 255 42 / 80%)) right bottom / 1px 26px no-repeat,
+		linear-gradient(160deg, rgb(14 25 27 / 98%), rgb(5 11 13 / 99%));
+	border: 1px solid #223634;
+	border-radius: 4px;
+	box-shadow: 0 22px 50px rgb(0 0 0 / 45%), 0 0 26px rgb(125 255 42 / 4%);
+}
+
+#loading .window {
+	margin: 12px;
+}
+
+.window h1,
+.window h2,
+.window h3,
+.header .title {
+	font-family: 'Chakra Petch', 'Rajdhani', system-ui, sans-serif;
+}
+
+.window h2 {
+	border-bottom: 1px solid #1f3a35;
+}
+
+/* ---------- Sidebar ---------- */
+#sidebar {
+	background:
+		repeating-linear-gradient(90deg, rgb(255 255 255 / 1.4%) 0 1px, transparent 1px 4px),
+		linear-gradient(165deg, #0d181a, #050b0c);
+	border-right: 1px solid #1b322d;
+	box-shadow: inset -2px 0 0 -1px rgb(125 255 42 / 35%);
+	width: 232px;
+}
+
+#sidebar .network {
+	border-bottom: 1px solid rgb(125 255 42 / 8%);
+	padding-bottom: 6px;
+}
+
+.channel-list-item {
+	font-family: 'Rajdhani', system-ui, sans-serif;
+	font-size: 14.5px;
+	font-weight: 600;
+	letter-spacing: .02em;
+	transition: background-color .16s, color .16s;
+}
+
+.channel-list-item:hover {
+	background: rgb(125 255 42 / 6%);
+	color: #eafff1;
+}
+
+.channel-list-item.active {
+	background: linear-gradient(90deg, rgb(125 255 42 / 16%), rgb(125 255 42 / 2%));
+	box-shadow: inset 2px 0 0 #7dff2a, inset 0 0 22px rgb(125 255 42 / 5%);
+	color: #7dff2a;
+}
+
+.channel-list-item[data-type="lobby"] {
+	color: #7dff2a;
+}
+
+.channel-list-item[data-type="lobby"].active,
+.channel-list-item[data-type="lobby"]:hover {
+	color: #b9ff8a;
+}
+
+.channel-list-item .badge {
+	background: rgb(125 255 42 / 10%);
+	color: #b9ff8a;
+}
+
+.channel-list-item .badge.highlight {
+	background: #7dff2a;
+	color: #051007;
+}
+
+#footer {
+	border-top: 1px solid rgb(125 255 42 / 14%);
+}
+
+#footer button {
+	color: #8ba79d;
+}
+
+#footer button:hover,
+#footer button.active {
+	color: #7dff2a;
+}
+
+/* ---------- Chat ---------- */
+#chat .header {
+	border-bottom: 1px solid #17302b;
+	background: linear-gradient(90deg, rgb(125 255 42 / 6%), transparent);
+}
+
+.header .topic {
+	color: var(--body-color-muted);
+}
+
+#chat .content {
+	border-left: 1px solid #12262a;
+}
+
+#chat .msg.highlight,
+#chat .msg.is-focused {
+	background-color: rgb(125 255 42 / 9%);
+	border-left: 3px solid #7dff2a;
+}
+
+#chat .date-marker:before {
+	border-top: 1px solid rgb(43 217 255 / 45%);
+}
+
+#chat .date-marker-text:before {
+	background-color: var(--window-bg-color);
+	color: #2bd9ff;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	font-size: 10.5px;
+}
+
+#chat .unread-marker:before {
+	border-top: 1px solid rgb(125 255 42 / 55%);
+}
+
+#chat .unread-marker-text:before {
+	background-color: var(--window-bg-color);
+	color: #7dff2a;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	font-size: 10.5px;
+}
+
+#chat .userlist {
+	border-left: 1px solid #17302b;
+	background: #071012;
+}
+
+#chat .userlist .count {
+	background: #0b181a;
+}
+
+#chat .names .user {
+	font-weight: 600;
+}
+
+.user {
+	color: #97e07f;
+}
+
+/* ---------- Formular / Eingaben / Buttons ---------- */
+#form {
+	border-top: 1px solid rgb(125 255 42 / 18%);
+	background: var(--form-bg-color);
+}
+
+#form #input {
+	color: #eafff1;
+	caret-color: #7dff2a;
+}
+
+#form :is(#submit, #upload, button) {
+	color: #7dff2a;
+	transition: color .16s, text-shadow .16s;
+}
+
+#form :is(#submit, #upload, button):hover {
+	color: #b9ff8a;
+	text-shadow: 0 0 12px rgb(125 255 42 / 55%);
+}
+
+#form #nick {
+	background: #0b181a;
+	border: 1px solid #1e3a33;
+	color: #b9ff8a;
+}
+
+.input,
+textarea.input {
+	background: #061013;
+	border: 1px solid #223b36;
+	border-radius: 3px;
+	color: #eafff1;
+}
+
+.input:not(:disabled):focus,
+.input:not(:disabled):hover {
+	border-color: #7dff2a;
+	box-shadow: 0 0 0 2px rgb(125 255 42 / 15%);
+}
+
+.btn {
+	background: linear-gradient(180deg, #8bff45, #5fd400);
+	border: 1px solid #7dff2a;
+	border-radius: 3px;
+	color: #051007;
+	font-family: 'Rajdhani', system-ui, sans-serif;
+	font-weight: 700;
+	letter-spacing: .10em;
+	text-transform: uppercase;
+	box-shadow: 0 0 18px rgb(125 255 42 / 22%);
+	transition: filter .16s, box-shadow .16s;
+}
+
+.btn:hover,
+.btn:focus {
+	background: linear-gradient(180deg, #a6ff6b, #7dff2a);
+	box-shadow: 0 0 26px rgb(125 255 42 / 38%);
+	filter: brightness(1.05);
+}
+
+/* ---------- Kontextmenüs ---------- */
+#context-menu,
+.textcomplete-menu,
+.mentions-popup {
+	background: #071315;
+	border: 1px solid #24503f;
+	border-radius: 4px;
+	box-shadow: 0 12px 30px rgb(0 0 0 / 55%), 0 0 20px rgb(125 255 42 / 8%);
+}
+
+.context-menu-item,
+.textcomplete-item,
+.textcomplete-item a {
+	color: #cfe6dc;
+}
+
+.context-menu-item.active,
+.context-menu-item:hover,
+.textcomplete-item:focus,
+.textcomplete-item:hover,
+.textcomplete-menu .active {
+	background: rgb(125 255 42 / 12%);
+	color: #eafff1;
+}
+
+.context-menu-divider {
+	background-color: #17302b;
+}
+
+/* ---------- Login / Loading ---------- */
+#sign-in .window,
+#loading .window {
+	border: 1px solid #223634;
+}
+
+#sign-in .container,
+#loading-status-container {
+	padding: 26px 20px;
+}
+
+#sign-in .btn {
+	margin-top: 26px;
+	width: 100%;
+}
+
+#sign-in label {
+	color: #9fc4b7;
+	letter-spacing: .10em;
+	text-transform: uppercase;
+	font-size: 11px;
+	font-weight: 700;
+}
+
+#sign-in .error {
+	color: #ff5f5f;
+}
+
+/* ---------- Sonstiges ---------- */
+.irc-monospace,
+pre,
+code,
+kbd {
+	background: #081416;
+	border: 1px solid #17302b;
+	border-radius: 3px;
+	color: #b9d8cd;
+}
+
+#upload-progressbar {
+	background: var(--upload-progressbar-color);
+	box-shadow: 0 0 12px var(--upload-progressbar-color);
+}
+
+.tooltipped:after {
+	background: #0b1a1c;
+	color: #d7efe5;
+	border: 1px solid #24503f;
+}

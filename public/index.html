@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FortKnox – Release Intelligence &amp; Control Center</title>
+    <meta name="description" content="FortKnox PreDB – Live-Release-Intelligence, IRC-Monitoring und Operations-Control-Center.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="/assets/fk-neon.css?v=20261110g">
+    <link rel="stylesheet" href="/assets/fk-index.css?v=20261110a">
+</head>
+
+<body class="fk-body">
+<div class="fk-app">
+    <div class="ix-shell">
+
+        <header class="ix-top">
+            <div class="fk-brand ix-brand" aria-label="FortKnox – Release Intelligence &amp; Control Center">
+                <div class="fk-brand-badge">
+                    <img class="fk-brand-shield" src="/assets/fortknox-shield.png" alt="">
+                </div>
+                <div class="fk-brand-text">
+                    <div class="fk-wordmark" aria-hidden="true"><span class="fk-word-fort">Fort</span><span class="fk-word-knox">Knox</span></div>
+                    <div class="fk-brand-sub" aria-hidden="true">Release Intelligence &amp; Control Center</div>
+                    <div class="fk-brand-tags" aria-hidden="true">Monitor <i>◆</i> Manage <i>◆</i> Secure</div>
+                </div>
+            </div>
+
+            <div class="ix-top-right">
+                <span class="ix-domains" aria-label="Erreichbar unter fk-predb.com und fortknox.cloud">
+                    <span>fk-predb.com</span><i>◆</i><span>fortknox.cloud</span>
+                </span>
+                <span class="ix-status"><span class="fk-online-dot" aria-hidden="true"></span> System Online</span>
+            </div>
+        </header>
+
+        <main class="ix-main">
+            <p class="ix-eyebrow">Release Intelligence Platform</p>
+            <h1 class="ix-headline">Monitor. Manage. <span>Secure.</span></h1>
+            <p class="ix-lead">
+                Live-PreDB, IRC-Monitoring und Operations-Konsole in einer Oberfläche.
+                Durchsuche Millionen Releases, verfolge den Livefeed und steuere das
+                FortKnox-Control-Center an einem Ort.
+            </p>
+
+            <section class="ix-stats" aria-label="Live-Kennzahlen">
+                <article class="ix-stat">
+                    <b id="ix-releases">–</b>
+                    <small>Releases gesamt</small>
+                </article>
+                <article class="ix-stat">
+                    <b id="ix-groups">–</b>
+                    <small>Release Groups</small>
+                </article>
+                <article class="ix-stat">
+                    <b id="ix-events">–</b>
+                    <small>Events</small>
+                </article>
+                <article class="ix-stat">
+                    <b id="ix-nuked">–</b>
+                    <small>Nuked Releases</small>
+                </article>
+            </section>
+
+            <section class="ix-links" aria-label="Bereiche">
+                <a class="ix-link primary" href="/dashboard.html">
+                    <span class="ix-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12h4l2-6 4 12 2-6h6"></path>
+                        </svg>
+                    </span>
+                    <h2>Live Dashboard</h2>
+                    <p>Releases durchsuchen, Livefeed verfolgen, Kategorien und Statistiken im Blick behalten.</p>
+                    <span class="ix-go">Dashboard öffnen →</span>
+                </a>
+
+                <a class="ix-link" href="/admin.html">
+                    <span class="ix-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"></path>
+                        </svg>
+                    </span>
+                    <h2>Control Center</h2>
+                    <p>IRC-Bots, externe Quellen, Moderation, Benutzer und Backups zentral verwalten.</p>
+                    <span class="ix-go">Admin öffnen →</span>
+                </a>
+
+                <a class="ix-link" href="/monitor/irc-fish/">
+                    <span class="ix-ico" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.5 9.5 0 0 1-4-.9L3 21l1.9-4.7A8.4 8.4 0 1 1 21 11.5Z"></path>
+                            <path d="M8 10h8M8 14h5"></path>
+                        </svg>
+                    </span>
+                    <h2>The Lounge</h2>
+                    <p>FiSH-IRC-Monitor im Browser – verbunden mit den FortKnox-Netzwerken.</p>
+                    <span class="ix-go">Lounge öffnen →</span>
+                </a>
+            </section>
+        </main>
+
+        <footer class="ix-foot">
+            <span>FortKnox PreDB · Release Intelligence &amp; Control Center</span>
+            <span class="ix-foot-domains">
+                <a href="https://fk-predb.com">fk-predb.com</a>
+                <i>◆</i>
+                <a href="https://fortknox.cloud">fortknox.cloud</a>
+            </span>
+        </footer>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var fields = {
+        releases: document.getElementById('ix-releases'),
+        groups: document.getElementById('ix-groups'),
+        events: document.getElementById('ix-events'),
+        nuked: document.getElementById('ix-nuked')
+    };
+
+    fetch('/api/dashboard', { cache: 'no-store' })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+            if (!data || !data.success || !data.stats) return;
+            Object.keys(fields).forEach(function (key) {
+                var el = fields[key];
+                if (!el) return;
+                var value = Number(data.stats[key]);
+                el.textContent = Number.isFinite(value) ? value.toLocaleString('de-DE') : '–';
+            });
+        })
+        .catch(function () { /* Platzhalter bleibt stehen */ });
+})();
+</script>
+</body>
+</html>

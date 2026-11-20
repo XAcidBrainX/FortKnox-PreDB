@@ -407,3 +407,430 @@ kbd {
 	color: #d7efe5;
 	border: 1px solid #24503f;
 }
+
+/* ============================================================
+   Feinschliff: Chat, Sidebar-Suche, Nick-Farben, Wortmarke
+   ============================================================ */
+
+/* ---------- Sidebar-Wortmarke (metallisch wie im Dashboard) ---------- */
+.logo-container {
+	padding: 12px 0 10px;
+	border-bottom: 1px solid rgb(125 255 42 / 12%);
+	background: linear-gradient(180deg, rgb(125 255 42 / 4%), transparent);
+}
+
+.logo-container::before {
+	margin: 0;
+	font-size: 21px;
+	letter-spacing: .15em;
+	background-image: linear-gradient(90deg, #eef4f6 0%, #f4fbfc 34%, #b9c6ca 40%, #b4ff70 50%, #6eea00 70%, #d2ff9e 88%, #9dff4d 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	filter: drop-shadow(0 0 14px rgb(125 255 42 / 22%));
+}
+
+.logo-container::after {
+	content: "RELEASE INTELLIGENCE";
+	display: block;
+	margin-top: 5px;
+	color: #7e938b;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 8.5px;
+	letter-spacing: .28em;
+	text-indent: .28em;
+}
+
+/* ---------- Suchfelder (Jump to / DM-Filter / Nachrichtensuche) ---------- */
+.jump-to-input .input,
+.message-search input {
+	background: rgb(6 16 19 / 92%);
+	border: 1px solid #1c332e;
+	border-radius: 3px;
+	color: #eafff1;
+	font-family: 'Rajdhani', system-ui, sans-serif;
+	font-size: 13.5px;
+	letter-spacing: .03em;
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
+	transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+.jump-to-input .input::placeholder,
+.message-search input::placeholder {
+	color: #6f857c;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 10px;
+	letter-spacing: .16em;
+	text-transform: uppercase;
+}
+
+.jump-to-input .input:focus,
+.message-search input:focus {
+	background: rgb(10 24 26 / 96%);
+	border-color: rgb(125 255 42 / 70%);
+	box-shadow: 0 0 0 2px rgb(125 255 42 / 12%), 0 0 18px rgb(125 255 42 / 8%);
+	outline: none;
+}
+
+.jump-to-input::before {
+	color: #5f7a70;
+}
+
+.message-search input {
+	margin: 7px 0;
+	padding: 0 12px;
+	height: 31px !important;
+}
+
+/* ---------- Kanal-/DM-Liste ---------- */
+.channel-list-item::before {
+	color: #4c635b;
+	transition: color .16s ease;
+}
+
+.channel-list-item:hover::before,
+.channel-list-item.active::before {
+	color: #7dff2a;
+	text-shadow: 0 0 10px rgb(125 255 42 / 45%);
+}
+
+.channel-list-item.has-unread {
+	color: #d8efe4;
+}
+
+.channel-list-item .badge {
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 9.5px;
+	letter-spacing: .04em;
+}
+
+.channel-list-item .close {
+	color: #7dff2a;
+}
+
+/* ---------- Chat-Kopf ---------- */
+#chat .header {
+	background: linear-gradient(90deg, rgb(125 255 42 / 7%), rgb(7 16 18 / 0%) 55%), #071012;
+	box-shadow: inset 0 -1px 0 rgb(125 255 42 / 14%);
+}
+
+#chat .header .title {
+	color: #eafff1;
+	font-family: 'Chakra Petch', 'Rajdhani', system-ui, sans-serif;
+	font-weight: 600;
+	letter-spacing: .02em;
+}
+
+#chat .header .topic {
+	color: #9fc4b7;
+}
+
+#chat .header button {
+	color: #6f857c;
+	transition: color .16s ease, text-shadow .16s ease;
+}
+
+#chat .header button:hover,
+#chat .header button.active {
+	color: #7dff2a;
+	text-shadow: 0 0 12px rgb(125 255 42 / 45%);
+}
+
+/* ---------- Nachrichten ---------- */
+#chat .msg {
+	padding: 1px 10px;
+}
+
+#chat .msg:hover {
+	background: rgb(125 255 42 / 3%);
+}
+
+#chat .msg .content {
+	background-color: transparent;
+	border-radius: 3px;
+	padding: 1px 6px;
+	line-height: 1.5;
+}
+
+#chat .msg.highlight .content,
+#chat .msg.is-focused .content {
+	background-color: rgb(125 255 42 / 10%);
+	box-shadow: inset 2px 0 0 #7dff2a;
+}
+
+#chat .msg .time,
+.time {
+	color: #5f7a70;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 12px;
+	letter-spacing: .01em;
+}
+
+#chat .msg .user {
+	font-weight: 700;
+	letter-spacing: .01em;
+}
+
+#chat .msg .user-bot-indicator {
+	color: #5f7a70;
+	font-size: .82em;
+}
+
+#chat .msg .hostmask,
+#chat .msg .hostmask a {
+	color: #6f857c;
+	text-decoration: none;
+}
+
+#chat .msg .hostmask a:hover {
+	color: #2bd9ff;
+}
+
+#chat .msg .toggle-button {
+	color: #5f7a70;
+}
+
+#chat .msg .toggle-button:hover {
+	color: #7dff2a;
+}
+
+/* ---------- Nick-Farbpalette (helle Variante für dunklen Grund) ---------- */
+.color-0 { color: #d6e6df; }
+.color-1 { color: #62d0ff; }
+.color-2 { color: #ffcc66; }
+.color-3 { color: #6dff9e; }
+.color-4 { color: #ff8fd8; }
+.color-5 { color: #ff6b6b; }
+.color-6 { color: #9aa8ff; }
+.color-7 { color: #8dff3d; }
+.color-8 { color: #5fe3d2; }
+.color-9 { color: #ffa3e8; }
+.color-10 { color: #57e6a1; }
+.color-11 { color: #b2ff7a; }
+.color-12 { color: #57e4ff; }
+.color-13 { color: #8ec5ff; }
+.color-14 { color: #ff9a9a; }
+.color-15 { color: #ffc078; }
+.color-16 { color: #6fe38f; }
+.color-17 { color: #ff9ad5; }
+.color-18 { color: #ff8080; }
+.color-19 { color: #ff97b3; }
+.color-20 { color: #5fd8b0; }
+.color-21 { color: #7db3ff; }
+.color-22 { color: #a0a8ff; }
+.color-23 { color: #61e0c9; }
+.color-24 { color: #8ab4ff; }
+.color-25 { color: #67d8ff; }
+.color-26 { color: #7ce88f; }
+.color-27 { color: #6cc9ff; }
+.color-28 { color: #a8e86a; }
+.color-29 { color: #ff8fd0; }
+.color-30 { color: #ffb066; }
+.color-31 { color: #ff7b7b; }
+.color-32 { color: #ff9be0; }
+
+/* ---------- Nutzerliste ---------- */
+#chat .userlist .count {
+	background: #081214;
+	border-bottom: 1px solid #14282a;
+}
+
+#chat .userlist .search {
+	color: #8ba79d;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 10.5px;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+}
+
+#chat .userlist .search::placeholder {
+	color: #8ba79d;
+	opacity: 1;
+}
+
+.user-mode {
+	margin-bottom: 10px;
+}
+
+.user-mode::before {
+	background: #081214;
+	border-bottom: 1px solid rgb(125 255 42 / 8%);
+	color: #5f7a70;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 9.5px;
+	letter-spacing: .2em;
+	text-transform: uppercase;
+}
+
+.user-mode .user {
+	padding: 2px 16px;
+	line-height: 1.75;
+}
+
+.user-mode .user:hover {
+	background: rgb(125 255 42 / 6%);
+}
+
+.status-online::after {
+	background-color: #7dff2a;
+	box-shadow: 0 0 8px rgb(125 255 42 / 70%);
+}
+
+.status-away::after {
+	background-color: #ffc857;
+}
+
+.status-offline::after {
+	background-color: #ff5a76;
+}
+
+/* ---------- Eingabezeile ---------- */
+#form #input::placeholder {
+	color: #6f857c;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 11px;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+}
+
+#form #nick {
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 11.5px;
+	letter-spacing: .04em;
+}
+
+/* ---------- Scroll-Indikator ---------- */
+#chat .scroll-down-arrow::after {
+	color: #051007;
+	background: #7dff2a;
+	box-shadow: 0 0 18px rgb(125 255 42 / 45%);
+}
+
+/* ---------- Login-Feinheiten ---------- */
+#sign-in label {
+	color: #7dff2a;
+}
+
+#sign-in .container::before {
+	filter: drop-shadow(0 0 22px rgb(125 255 42 / 26%)) drop-shadow(0 2px 0 rgb(0 0 0 / 45%));
+	margin-bottom: 26px;
+}
+
+#sign-in .password-container .reveal-password {
+	color: #6f857c;
+}
+
+#sign-in .password-container .reveal-password:hover {
+	color: #7dff2a;
+}
+
+#sign-in .error {
+	background: rgb(255 90 118 / 10%);
+	border-left: 2px solid #ff5a76;
+	padding: 6px 9px;
+}
+
+/* ---------- Nachbesserungen ---------- */
+#sidebar .dm-filter-input,
+#sidebar .dm-filter-input.input {
+	background: rgb(6 16 19 / 92%);
+	border: 1px solid #1c332e;
+	border-radius: 3px;
+	color: #eafff1;
+	font-family: 'Rajdhani', system-ui, sans-serif;
+	font-size: 13.5px;
+	letter-spacing: .03em;
+}
+
+#sidebar .dm-filter-input::placeholder {
+	color: #6f857c;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 10px;
+	letter-spacing: .16em;
+	text-transform: uppercase;
+}
+
+#sidebar .dm-filter-input:focus {
+	background: rgb(10 24 26 / 96%);
+	border-color: rgb(125 255 42 / 70%);
+	box-shadow: 0 0 0 2px rgb(125 255 42 / 12%);
+	outline: none;
+}
+
+#chat form.message-search input {
+	background: rgb(6 16 19 / 92%);
+	border: 1px solid #1c332e;
+	border-radius: 3px;
+	color: #eafff1;
+}
+
+#chat form.message-search input::placeholder {
+	color: #6f857c;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 10px;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+}
+
+#chat form.message-search input:focus {
+	background: rgb(10 24 26 / 96%);
+	border-color: rgb(125 255 42 / 70%);
+	box-shadow: 0 0 0 2px rgb(125 255 42 / 12%);
+	outline: none;
+}
+
+#chat .msg[data-type="notice"] :is(.content, .time, .user) {
+	color: #6fd8ff;
+}
+
+#chat .msg[data-type="error"] :is(.content, .time, .user) {
+	color: #ff8f9f;
+}
+
+#chat .msg[data-type="motd"] .content {
+	color: #b9d8cd;
+}
+
+#chat .msg[data-type="join"] .from::before,
+#chat .msg[data-type="mode"] .from::before,
+#chat .msg[data-type="mode_channel"] .from::before {
+	color: #7dff2a;
+}
+
+#chat .msg[data-type="part"] .from::before,
+#chat .msg[data-type="quit"] .from::before {
+	color: #ffc857;
+}
+
+#chat .msg[data-type="kick"] .from::before {
+	color: #ff5a76;
+}
+
+/* Inline-Eingaben (z. B. NickServ-Prompts) dunkel halten */
+#chat .msg input:not([type="checkbox"]):not([type="radio"]),
+#chat .msg textarea {
+	background: #061013;
+	border: 1px solid #223b36;
+	border-radius: 3px;
+	color: #eafff1;
+	padding: 4px 8px;
+}
+
+#chat .msg input:focus,
+#chat .msg textarea:focus {
+	border-color: #7dff2a;
+	box-shadow: 0 0 0 2px rgb(125 255 42 / 12%);
+	outline: none;
+}
+
+/* Monospace-Blöcke (z. B. MOTD) dunkel statt weiß */
+#chat .msg[data-type="monospace_block"] .text {
+	background: #081416;
+	border: 1px solid #17302b;
+	border-radius: 3px;
+	color: #b9d8cd;
+	font-family: 'Share Tech Mono', ui-monospace, monospace;
+	font-size: 12.5px;
+	line-height: 1.55;
+	padding: 6px 9px;
+}

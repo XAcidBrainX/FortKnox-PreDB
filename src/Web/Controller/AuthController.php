@@ -158,7 +158,7 @@ final class AuthController
         }
 
         $pdo = $this->connection->get();
-        $bots = $pdo->query('SELECT id, name, host, port, tls, nick, username, realname, channels, is_enabled FROM irc_networks ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
+        $bots = $pdo->query('SELECT id, name, host, port, tls, nick, username, realname, channels, is_enabled, enable_announce FROM irc_networks ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($bots as &$bot) {
             $id = (int) $bot['id'];
@@ -167,7 +167,15 @@ final class AuthController
             try {
                 $status = trim((string) @shell_exec("systemctl is-active {$service} 2>/dev/null"));
             } catch (\Throwable $t) {}
-            $bot['service_status'] = $status === 'active' ? 'active' : 'inactive';
+            // Rohstatus zurückgeben (active, inactive, failed, activating, ...),
+            // damit das Panel Fehlerzustände korrekt anzeigen kann.
+            $bot['service_status'] = $status !== '' ? $status : 'unknown';
+
+            $enabled = '';
+            try {
+                $enabled = trim((string) @shell_exec("systemctl is-enabled {$service} 2>/dev/null"));
+            } catch (\Throwable $t) {}
+            $bot['service_enabled'] = $enabled === 'enabled';
         }
 
         echo json_encode(['bots' => $bots]);
@@ -195,12 +203,19 @@ final class AuthController
         $real = trim((string) ($data['realname'] ?? 'FortKnox PreDB'));
         $pass = trim((string) ($data['password'] ?? ''));
         $channels = trim((string) ($data['channels'] ?? '#predb'));
+        $announce = array_key_exists('enable_announce', $data)
+            ? (!empty($data['enable_announce']) ? 1 : 0)
+            : null;
 
         if ($host === '' || $nick === '') {
             http_response_code(400);
             echo json_encode(['error' => 'Host und Nickname dürfen nicht leer sein.']);
             return;
         }
+
+        $activated = null;
+        $restarted = false;
+        $warning = null;
 
         if ($id) {
             $sql = 'UPDATE irc_networks SET name = ?, host = ?, port = ?, tls = ?, nick = ?, username = ?, realname = ?, channels = ?';
@@ -209,21 +224,61 @@ final class AuthController
                 $sql .= ', password = ?';
                 $params[] = $pass;
             }
+            if ($announce !== null) {
+                $sql .= ', enable_announce = ?';
+                $params[] = $announce;
+            }
             $sql .= ' WHERE id = ?';
             $params[] = $id;
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
+
+            // Laufende Instanz neu starten, damit geänderte Einstellungen
+            // (Host, Nick, Channels, Passwort, ...) sofort übernommen werden.
+            $service = "fortknox-irc@{$id}.service";
+            $status = trim((string) @shell_exec("systemctl is-active {$service} 2>/dev/null"));
+            if ($status === 'active') {
+                $restart = $this->runSystemctl(['restart', $service]);
+                if ($restart['code'] === 0) {
+                    $restarted = true;
+                } else {
+                    $warning = $this->serviceError($restart, 'Einstellungen gespeichert, aber der Bot konnte nicht neu gestartet werden.');
+                }
+            }
         } else {
             $stmt = $pdo->prepare('
-                INSERT INTO irc_networks (name, host, port, tls, nick, username, realname, password, channels, is_enabled)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                INSERT INTO irc_networks (name, host, port, tls, nick, username, realname, password, channels, is_enabled, enable_announce)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
             ');
-            $stmt->execute([$name, $host, $port, $tls, $nick, $user, $real, $pass !== '' ? $pass : null, $channels]);
+            $stmt->execute([$name, $host, $port, $tls, $nick, $user, $real, $pass !== '' ? $pass : null, $channels, $announce ?? 1]);
             $id = (int) $pdo->lastInsertId();
-            shell_exec("systemctl enable fortknox-irc@{$id}.service 2>/dev/null");
+
+            // Neuen Bot sofort aktivieren (enable + start), nicht nur für den Boot vormerken.
+            $activation = $this->runSystemctl(['enable', '--now', "fortknox-irc@{$id}.service"]);
+            if ($activation['code'] !== 0) {
+                $pdo->prepare('UPDATE irc_networks SET is_enabled = 0 WHERE id = ?')->execute([$id]);
+                $this->runSystemctl(['disable', "fortknox-irc@{$id}.service"]);
+
+                echo json_encode([
+                    'success' => true,
+                    'id' => $id,
+                    'activated' => false,
+                    'warning' => $this->serviceError($activation, 'Bot wurde gespeichert, konnte aber nicht gestartet werden.'),
+                ]);
+                return;
+            }
+
+            $activated = true;
+            $restarted = true;
         }
 
-        echo json_encode(['success' => true, 'id' => $id]);
+        echo json_encode([
+            'success' => true,
+            'id' => $id,
+            'activated' => $activated,
+            'restarted' => $restarted,
+            'warning' => $warning,
+        ]);
     }
 
     public function toggleBotService(int $id, string $action): void
@@ -237,18 +292,43 @@ final class AuthController
 
         $service = "fortknox-irc@{$id}.service";
         $pdo = $this->connection->get();
+        $result = null;
+        $warning = null;
 
         if ($action === 'start') {
             $pdo->prepare('UPDATE irc_networks SET is_enabled = 1 WHERE id = ?')->execute([$id]);
-            shell_exec("systemctl enable --now {$service} 2>/dev/null");
+            $result = $this->runSystemctl(['enable', '--now', $service]);
+            if ($result['code'] !== 0) {
+                $pdo->prepare('UPDATE irc_networks SET is_enabled = 0 WHERE id = ?')->execute([$id]);
+                $this->runSystemctl(['disable', $service]);
+            }
         } elseif ($action === 'stop') {
             $pdo->prepare('UPDATE irc_networks SET is_enabled = 0 WHERE id = ?')->execute([$id]);
-            shell_exec("systemctl stop {$service} 2>/dev/null");
+            // Erst aus dem Boot-Start nehmen, dann stoppen. "disable --now" ist von
+            // der sudoers-Regel nicht abgedeckt, daher zwei einzelne Aufrufe.
+            $disable = $this->runSystemctl(['disable', $service]);
+            $result = $this->runSystemctl(['stop', $service]);
+            if ($result['code'] === 0 && $disable['code'] !== 0) {
+                $warning = $this->serviceError($disable, 'Bot gestoppt, konnte aber nicht dauerhaft deaktiviert werden.');
+            }
         } elseif ($action === 'restart') {
-            shell_exec("systemctl restart {$service} 2>/dev/null");
+            $result = $this->runSystemctl(['restart', $service]);
+        } else {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Unbekannte Aktion.']);
+            return;
         }
 
-        echo json_encode(['success' => true]);
+        if ($result !== null && $result['code'] !== 0) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => $this->serviceError($result, "Aktion '{$action}' fehlgeschlagen."),
+            ]);
+            return;
+        }
+
+        echo json_encode(['success' => true, 'action' => $action, 'warning' => $warning]);
     }
 
     public function deleteBot(int $id): void
@@ -260,13 +340,62 @@ final class AuthController
             return;
         }
 
-        shell_exec("systemctl stop fortknox-irc@{$id}.service 2>/dev/null");
-        shell_exec("systemctl disable fortknox-irc@{$id}.service 2>/dev/null");
+        $service = "fortknox-irc@{$id}.service";
+        $this->runSystemctl(['disable', $service]);
+        $this->runSystemctl(['stop', $service]);
 
         $pdo = $this->connection->get();
         $pdo->prepare('DELETE FROM irc_networks WHERE id = ?')->execute([$id]);
 
         echo json_encode(['success' => true]);
+    }
+
+    /**
+     * Führt systemctl für eine FortKnox-IRC-Instanz über sudo aus.
+     * Die sudoers-Regel erlaubt www-data ausschließlich fortknox-irc@*.
+     *
+     * @param list<string> $arguments
+     * @return array{code:int,out:string,err:string}
+     */
+    private function runSystemctl(array $arguments): array
+    {
+        $command = array_merge(['/usr/bin/sudo', '-n', '/bin/systemctl'], $arguments);
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $pipes = [];
+        $process = @proc_open($command, $descriptors, $pipes);
+
+        if (!is_resource($process)) {
+            return ['code' => -1, 'out' => '', 'err' => 'systemctl konnte nicht gestartet werden.'];
+        }
+
+        fclose($pipes[0]);
+        $stdout = (string) stream_get_contents($pipes[1]);
+        $stderr = (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $code = proc_close($process);
+
+        return ['code' => $code, 'out' => trim($stdout), 'err' => trim($stderr)];
+    }
+
+    /**
+     * @param array{code:int,out:string,err:string} $result
+     */
+    private function serviceError(array $result, string $fallback): string
+    {
+        $detail = trim($result['err'] !== '' ? $result['err'] : $result['out']);
+        $detail = trim((string) preg_replace('/\s+/', ' ', $detail));
+
+        if ($detail === '') {
+            return $fallback;
+        }
+
+        return $fallback . ' ' . substr($detail, 0, 300);
     }
 
     public static function check(): bool

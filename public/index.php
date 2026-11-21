@@ -187,7 +187,7 @@ $router->post('/api/admin/users', $requireAuth(function () use ($connection) {
     if ($id > 0) {
         $check = $pdo->prepare('SELECT username, role, is_active FROM admin_users WHERE id = ?');
         $check->execute([$id]);
-        $existing = $check->fetchColumn();
+        $existing = $check->fetch(\PDO::FETCH_ASSOC);
         if ($existing === false) {
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Benutzer nicht gefunden.']);

@@ -14,7 +14,9 @@
     </style>
 </head>
 <body>
-    <!-- TheLounge UI wird in einem Full‑Size‑Iframe geladen -->
-    <iframe src="https://fortknox.cloud:9000/"></iframe>
+    <!-- TheLounge UI wird in einem Full‑Size‑Iframe geladen.
+         Der Dienst lauscht nur auf 127.0.0.1:9001 und wird von Apache
+         unter /monitor/irc-fish/ bereitgestellt. -->
+    <iframe src="/monitor/irc-fish/"></iframe>
 </body>
 </html>
